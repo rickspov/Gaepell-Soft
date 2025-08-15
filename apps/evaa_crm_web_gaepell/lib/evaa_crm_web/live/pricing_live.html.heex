@@ -1,0 +1,582 @@
+<div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
+  <!-- Header -->
+  <div class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div class="text-center">
+        <h1 class="text-4xl font-bold text-gray-900 dark:text-white mb-4">
+          🚀 Propuesta Comercial
+        </h1>
+        <h2 class="text-2xl font-semibold text-blue-600 dark:text-blue-400 mb-2">
+          E.V.A - Sistema Integral de Gestión
+        </h2>
+        <p class="text-lg text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
+          Propuesta especial para <strong>Grupo Gaepell</strong> - Nuestro primer cliente. 
+          Sistema completo de gestión de flotas y cotizaciones con beneficios exclusivos de E.V.A.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pricing Plans -->
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-16">
+              <%= for plan <- @pricing_plans do %>
+        <div class="relative">
+          <%= if plan.recommended do %>
+            <div class="absolute -top-6 left-1/2 transform -translate-x-1/2 z-10">
+              <span class="bg-blue-600 text-white px-6 py-3 rounded-full text-sm font-semibold shadow-xl">
+                ⭐ <%= plan.badge %>
+              </span>
+            </div>
+          <% end %>
+          
+          <div class={"bg-white dark:bg-gray-800 rounded-2xl shadow-xl border-2 #{if plan.recommended, do: "border-blue-500", else: "border-gray-200 dark:border-gray-700"} p-8 h-full relative overflow-hidden"}>
+            <%= if plan.recommended do %>
+              <div class="absolute top-0 right-0 w-32 h-32 bg-blue-500 opacity-10 rounded-full -mr-16 -mt-16"></div>
+            <% end %>
+            
+            <!-- Plan Header -->
+            <div class="text-center mb-8">
+              <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                <%= plan.name %>
+              </h3>
+              <p class="text-gray-600 dark:text-gray-400 mb-4">
+                <%= plan.subtitle %>
+              </p>
+              
+              <!-- Price -->
+              <div class="mb-6">
+                <div class="flex items-center justify-center">
+                  <span class="text-4xl font-bold text-gray-900 dark:text-white">$<%= plan.price %></span>
+                  <span class="text-lg text-gray-500 dark:text-gray-400 ml-2">USD</span>
+                </div>
+                <%= if plan.discount do %>
+                  <div class="flex items-center justify-center mt-2">
+                    <span class="text-lg text-gray-500 dark:text-gray-400 line-through">$<%= plan.original_price %></span>
+                    <span class="ml-2 bg-green-100 text-green-800 text-sm font-semibold px-2 py-1 rounded">
+                      <%= plan.discount %> descuento
+                    </span>
+                  </div>
+                <% end %>
+              </div>
+              
+              <p class="text-sm text-gray-600 dark:text-gray-400 mb-6">
+                <%= plan.description %>
+              </p>
+            </div>
+
+            <!-- Payment Structure -->
+            <div class="mb-8">
+              <h4 class="font-semibold text-gray-900 dark:text-white mb-4 text-center">
+                Estructura de Pago
+              </h4>
+              <div class="space-y-3">
+                <%= for payment <- plan.payment_structure do %>
+                  <div class="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                    <div>
+                      <div class="font-medium text-gray-900 dark:text-white">
+                        <%= payment.label %>
+                      </div>
+                      <div class="text-sm text-gray-500 dark:text-gray-400">
+                        <%= payment.description %>
+                      </div>
+                    </div>
+                    <div class="text-lg font-bold text-blue-600 dark:text-blue-400">
+                      $<%= payment.amount %>
+                    </div>
+                  </div>
+                <% end %>
+              </div>
+            </div>
+
+            <!-- Features -->
+            <div class="mb-8">
+              <h4 class="font-semibold text-gray-900 dark:text-white mb-4">
+                Incluye:
+              </h4>
+              <ul class="space-y-3">
+                <%= for feature <- plan.features do %>
+                  <li class="flex items-start">
+                    <svg class="w-5 h-5 text-green-500 mt-0.5 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                    </svg>
+                    <span class="text-gray-700 dark:text-gray-300"><%= feature %></span>
+                  </li>
+                <% end %>
+              </ul>
+            </div>
+
+            <!-- CTA Button -->
+            <div class="text-center">
+              <button phx-click="show_plan_details" phx-value-plan={plan.id}
+                      class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition duration-200 transform hover:scale-105">
+                Ver Detalles de <%= plan.name %>
+              </button>
+            </div>
+          </div>
+        </div>
+      <% end %>
+    </div>
+
+    <!-- First Client Benefits Section -->
+    <div class="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-2xl shadow-xl p-8 mb-16">
+      <div class="text-center mb-8">
+        <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+          🎁 Beneficios Exclusivos para Grupo Gaepell
+        </h2>
+        <p class="text-lg text-gray-600 dark:text-gray-300">
+          Como nuestro primer cliente, disfrutarás de beneficios únicos que no ofrecemos a nadie más
+        </p>
+      </div>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <%= for benefit <- first_client_benefits() do %>
+          <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg border-l-4 border-blue-500">
+            <div class="text-center">
+              <p class="text-lg font-semibold text-gray-900 dark:text-white">
+                <%= benefit %>
+              </p>
+            </div>
+          </div>
+        <% end %>
+      </div>
+      
+      <div class="mt-8 text-center">
+        <div class="bg-blue-600 text-white rounded-lg p-4 inline-block">
+          <p class="text-lg font-bold">
+            💎 Valor total de beneficios: <span class="text-yellow-300">$15,000+ USD</span>
+          </p>
+          <p class="text-sm opacity-90">
+            Incluidos sin costo adicional en cualquier plan
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Features Section -->
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 mb-16">
+      <h2 class="text-3xl font-bold text-gray-900 dark:text-white text-center mb-12">
+        🎯 Funcionalidades Incluidas
+      </h2>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <%= for feature <- @features_included do %>
+          <div class="bg-gray-50 dark:bg-gray-700 rounded-xl p-6">
+            <div class="flex items-center mb-4">
+              <span class="text-3xl mr-3"><%= feature.icon %></span>
+              <h3 class="text-xl font-semibold text-gray-900 dark:text-white">
+                <%= feature.category %>
+              </h3>
+            </div>
+            <ul class="space-y-2">
+              <%= for item <- feature.items do %>
+                <li class="flex items-start">
+                  <svg class="w-4 h-4 text-blue-500 mt-1 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                  </svg>
+                  <span class="text-gray-700 dark:text-gray-300"><%= item %></span>
+                </li>
+              <% end %>
+            </ul>
+          </div>
+        <% end %>
+      </div>
+    </div>
+
+    <!-- Timeline Section -->
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 mb-16">
+      <h2 class="text-3xl font-bold text-gray-900 dark:text-white text-center mb-12">
+        ⏰ Cronograma de Entrega
+      </h2>
+      
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <%= for phase <- @timeline do %>
+          <div class="relative">
+            <%= if phase.index < 2 do %>
+              <div class="hidden md:block absolute top-8 left-full w-full h-0.5 bg-blue-200 dark:bg-gray-600 z-0"></div>
+            <% end %>
+            
+            <div class="relative z-10 bg-blue-50 dark:bg-gray-700 rounded-xl p-6 text-center">
+              <div class="w-16 h-16 bg-blue-600 text-white rounded-full flex items-center justify-center mx-auto mb-4 text-xl font-bold">
+                <%= phase.index + 1 %>
+              </div>
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                <%= phase.phase %>
+              </h3>
+              <p class="text-blue-600 dark:text-blue-400 font-medium mb-3">
+                <%= phase.duration %>
+              </p>
+              <h4 class="font-semibold text-gray-900 dark:text-white mb-2">
+                <%= phase.title %>
+              </h4>
+              <p class="text-gray-600 dark:text-gray-400 text-sm">
+                <%= phase.description %>
+              </p>
+            </div>
+          </div>
+        <% end %>
+      </div>
+      
+      <div class="text-center mt-8">
+        <p class="text-lg font-semibold text-gray-900 dark:text-white">
+          ⏱️ Tiempo total: <span class="text-blue-600 dark:text-blue-400">5 semanas</span>
+        </p>
+      </div>
+    </div>
+
+    <!-- Guarantees Section -->
+    <div class="bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20 rounded-2xl shadow-xl p-8 mb-16">
+      <h2 class="text-3xl font-bold text-gray-900 dark:text-white text-center mb-4">
+        🛡️ Garantías Lifetime y Propiedad Total
+      </h2>
+      <p class="text-lg text-gray-600 dark:text-gray-400 text-center mb-8 max-w-4xl mx-auto">
+        Como nuestro primer cliente, no solo obtienes beneficios lifetime, sino que también serás <strong>propietario completo</strong> de tu sistema. 
+        El código fuente, la licencia y todos los derechos serán tuyos para siempre.
+      </p>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <%= for guarantee <- @guarantees do %>
+          <div class="flex items-start">
+            <svg class="w-6 h-6 text-green-500 mt-1 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+            </svg>
+            <span class="text-gray-700 dark:text-gray-300 font-medium"><%= guarantee %></span>
+          </div>
+        <% end %>
+      </div>
+      
+      <div class="mt-8 text-center">
+        <div class="bg-blue-600 text-white rounded-lg p-6 inline-block max-w-2xl">
+          <h3 class="text-xl font-bold mb-2">🏆 Propiedad Total Garantizada</h3>
+          <p class="text-sm opacity-90">
+            Al finalizar el proyecto, Grupo Gaepell será <strong>propietario completo</strong> del sistema, 
+            incluyendo el código fuente, la base de datos y todos los derechos de uso. 
+            No habrá licencias recurrentes ni dependencias externas.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Comparison Section -->
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 mb-16">
+      <h2 class="text-3xl font-bold text-gray-900 dark:text-white text-center mb-12">
+        📊 ¿Por qué elegir E.V.A?
+      </h2>
+      
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <%= for comparison <- @comparison_data do %>
+          <div class="relative">
+            <%= if comparison.agency == "E.V.A (Tu Opción)" do %>
+              <div class="absolute -top-6 left-1/2 transform -translate-x-1/2 z-10">
+                <span class="bg-green-600 text-white px-6 py-3 rounded-full text-sm font-semibold shadow-xl">
+                  ⭐ Recomendado
+                </span>
+              </div>
+            <% end %>
+            
+            <div class={"bg-gray-50 dark:bg-gray-700 rounded-xl p-6 h-full border-2 #{if comparison.agency == "E.V.A (Tu Opción)", do: "border-green-500", else: "border-gray-200 dark:border-gray-600"}"}>
+              <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4 text-center">
+                <%= comparison.agency %>
+              </h3>
+              
+              <div class="space-y-3 mb-6">
+                <div class="flex justify-between">
+                  <span class="text-gray-600 dark:text-gray-400">Precio:</span>
+                  <span class="font-semibold text-gray-900 dark:text-white"><%= comparison.price %></span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-gray-600 dark:text-gray-400">Tiempo:</span>
+                  <span class="font-semibold text-gray-900 dark:text-white"><%= comparison.timeline %></span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-gray-600 dark:text-gray-400">Soporte:</span>
+                  <span class="font-semibold text-gray-900 dark:text-white"><%= comparison.support %></span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-gray-600 dark:text-gray-400">Mantenimiento:</span>
+                  <span class="font-semibold text-gray-900 dark:text-white"><%= comparison.maintenance %></span>
+                </div>
+              </div>
+              
+              <div class="space-y-2">
+                <h4 class="font-semibold text-gray-900 dark:text-white mb-3">Incluye:</h4>
+                <%= for feature <- comparison.features do %>
+                  <div class="flex items-start">
+                    <svg class="w-4 h-4 text-green-500 mt-1 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                    </svg>
+                    <span class="text-sm text-gray-700 dark:text-gray-300"><%= feature %></span>
+                  </div>
+                <% end %>
+              </div>
+            </div>
+          </div>
+        <% end %>
+      </div>
+      
+      <div class="text-center mt-8">
+        <div class="bg-green-100 dark:bg-green-900/20 rounded-lg p-6 inline-block">
+          <p class="text-lg font-bold text-green-800 dark:text-green-400">
+            💰 Ahorro estimado: <span class="text-2xl">$12,000 - $47,000 USD</span>
+          </p>
+          <p class="text-sm text-green-600 dark:text-green-300">
+            Comparado con otras opciones del mercado
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- CTA Section -->
+    <div class="text-center">
+      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8">
+        <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+          ¿Listo para revolucionar Grupo Gaepell?
+        </h2>
+        <p class="text-lg text-gray-600 dark:text-gray-400 mb-8 max-w-2xl mx-auto">
+          Como nuestro primer cliente, ya estás disfrutando de la demo gratuita de E.V.A. 
+          ¿Listo para dar el siguiente paso y transformar completamente la gestión de tu flota y cotizaciones?
+        </p>
+        
+        <div class="flex flex-col sm:flex-row gap-4 justify-center">
+          <button phx-click="show_contact_form"
+                  class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-lg transition duration-200 transform hover:scale-105">
+            📞 Solicitar Propuesta Detallada
+          </button>
+          <a href="mailto:contacto@eva.com" 
+             class="bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-900 dark:text-white font-semibold py-3 px-8 rounded-lg transition duration-200">
+            📧 Contactar por Email
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Plan Details Modal -->
+<%= if @show_plan_details and @selected_plan do %>
+  <div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" id="plan-details-modal">
+    <div class="relative top-4 mx-auto p-5 border w-11/12 max-w-6xl shadow-lg rounded-md bg-white dark:bg-gray-800 max-h-[95vh] overflow-y-auto">
+      <div class="mt-3">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-6">
+          <div>
+            <h3 class="text-2xl font-bold text-gray-900 dark:text-white">
+              Detalles del Plan: <%= @selected_plan %>
+            </h3>
+            <p class="text-lg text-blue-600 dark:text-blue-400 font-semibold">
+              Información detallada del plan seleccionado
+            </p>
+          </div>
+          <button phx-click="close_plan_details" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Plan Information -->
+        <div class="mb-8">
+          <div class="bg-blue-50 dark:bg-gray-700 rounded-xl p-6 mb-6">
+            <h4 class="text-xl font-bold text-gray-900 dark:text-white mb-4">
+              📋 Información del Plan
+            </h4>
+            <p class="text-lg text-gray-700 dark:text-gray-300 leading-relaxed">
+              <%= case @selected_plan do %>
+                <% "premium" -> %>
+                  <strong>Plan Premium - Recomendado para Grupo Gaepell</strong><br>
+                  El plan más conveniente con pago anticipado y descuento especial del 20%. 
+                  Incluye desarrollo prioritario, capacitación personalizada y soporte premium.
+                <% "standard" -> %>
+                  <strong>Plan Estándar - Flexibilidad y control financiero</strong><br>
+                  Plan tradicional con pagos distribuidos que te permite mantener el control 
+                  de tu flujo de caja mientras desarrollamos tu sistema.
+                <% "flexible" -> %>
+                  <strong>Plan Flexible - Mínima inversión inicial</strong><br>
+                  Plan diseñado para empresas que quieren empezar con la mínima inversión 
+                  posible, pagando en cuotas mensuales sin intereses.
+              <% end %>
+            </p>
+          </div>
+        </div>
+
+        <!-- Benefits Section -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+          <div>
+            <h4 class="text-xl font-bold text-gray-900 dark:text-white mb-4">
+              🎁 Beneficios Incluidos
+            </h4>
+            <div class="space-y-3">
+              <%= case @selected_plan do %>
+                <% "premium" -> %>
+                  <div class="flex items-start"><span class="text-2xl mr-3">✅</span><span class="text-gray-700 dark:text-gray-300">Ahorro inmediato de $500 USD con descuento del 20%</span></div>
+                  <div class="flex items-start"><span class="text-2xl mr-3">✅</span><span class="text-gray-700 dark:text-gray-300">Desarrollo prioritario - Tu proyecto será el primero en la cola</span></div>
+                  <div class="flex items-start"><span class="text-2xl mr-3">✅</span><span class="text-gray-700 dark:text-gray-300">Capacitación personalizada para todo tu equipo</span></div>
+                  <div class="flex items-start"><span class="text-2xl mr-3">✅</span><span class="text-gray-700 dark:text-gray-300">Soporte premium con respuesta en menos de 2 horas</span></div>
+                  <div class="flex items-start"><span class="text-2xl mr-3">✅</span><span class="text-gray-700 dark:text-gray-300">Actualizaciones gratuitas de por vida</span></div>
+                  <div class="flex items-start"><span class="text-2xl mr-3">✅</span><span class="text-gray-700 dark:text-gray-300">Propiedad total del código fuente y sistema</span></div>
+                <% "standard" -> %>
+                  <div class="flex items-start"><span class="text-2xl mr-3">✅</span><span class="text-gray-700 dark:text-gray-300">Pagos distribuidos sin intereses adicionales</span></div>
+                  <div class="flex items-start"><span class="text-2xl mr-3">✅</span><span class="text-gray-700 dark:text-gray-300">Seguimiento detallado del progreso del desarrollo</span></div>
+                  <div class="flex items-start"><span class="text-2xl mr-3">✅</span><span class="text-gray-700 dark:text-gray-300">Capacitación completa para todo el equipo</span></div>
+                  <div class="flex items-start"><span class="text-2xl mr-3">✅</span><span class="text-gray-700 dark:text-gray-300">Soporte técnico lifetime incluido</span></div>
+                  <div class="flex items-start"><span class="text-2xl mr-3">✅</span><span class="text-gray-700 dark:text-gray-300">Actualizaciones gratuitas de por vida</span></div>
+                  <div class="flex items-start"><span class="text-2xl mr-3">✅</span><span class="text-gray-700 dark:text-gray-300">Propiedad total del código fuente y sistema</span></div>
+                <% "flexible" -> %>
+                  <div class="flex items-start"><span class="text-2xl mr-3">✅</span><span class="text-gray-700 dark:text-gray-300">Mínima inversión inicial de solo $500 USD</span></div>
+                  <div class="flex items-start"><span class="text-2xl mr-3">✅</span><span class="text-gray-700 dark:text-gray-300">8 pagos mensuales de $337.50 USD sin intereses</span></div>
+                  <div class="flex items-start"><span class="text-2xl mr-3">✅</span><span class="text-gray-700 dark:text-gray-300">Puedes empezar inmediatamente con tu proyecto</span></div>
+                  <div class="flex items-start"><span class="text-2xl mr-3">✅</span><span class="text-gray-700 dark:text-gray-300">Capacitación lifetime para todo el personal</span></div>
+                  <div class="flex items-start"><span class="text-2xl mr-3">✅</span><span class="text-gray-700 dark:text-gray-300">Mantenimiento y soporte técnico lifetime</span></div>
+                  <div class="flex items-start"><span class="text-2xl mr-3">✅</span><span class="text-gray-700 dark:text-gray-300">Propiedad total del código fuente y sistema</span></div>
+              <% end %>
+            </div>
+          </div>
+
+          <div>
+            <h4 class="text-xl font-bold text-gray-900 dark:text-white mb-4">
+              💰 Estructura de Pagos
+            </h4>
+            <div class="space-y-3">
+              <%= case @selected_plan do %>
+                <% "premium" -> %>
+                  <div class="flex items-start"><span class="text-2xl mr-3">💳</span><span class="text-gray-700 dark:text-gray-300">Inversión inicial: $1,000 USD (40%)</span></div>
+                  <div class="flex items-start"><span class="text-2xl mr-3">💳</span><span class="text-gray-700 dark:text-gray-300">Inversión final: $1,500 USD (60%)</span></div>
+                  <div class="flex items-start"><span class="text-2xl mr-3">💰</span><span class="text-gray-700 dark:text-gray-300">Ahorro total: $500 USD vs precio normal</span></div>
+                  <div class="flex items-start"><span class="text-2xl mr-3">📈</span><span class="text-gray-700 dark:text-gray-300">ROI estimado: 300% en el primer año</span></div>
+                <% "standard" -> %>
+                  <div class="flex items-start"><span class="text-2xl mr-3">💳</span><span class="text-gray-700 dark:text-gray-300">Pago inicial: $900 USD (30%)</span></div>
+                  <div class="flex items-start"><span class="text-2xl mr-3">💳</span><span class="text-gray-700 dark:text-gray-300">Pago progreso: $1,200 USD (40%)</span></div>
+                  <div class="flex items-start"><span class="text-2xl mr-3">💳</span><span class="text-gray-700 dark:text-gray-300">Pago final: $900 USD (30%)</span></div>
+                  <div class="flex items-start"><span class="text-2xl mr-3">💰</span><span class="text-gray-700 dark:text-gray-300">Total: $3,000 USD sin intereses</span></div>
+                <% "flexible" -> %>
+                  <div class="flex items-start"><span class="text-2xl mr-3">💳</span><span class="text-gray-700 dark:text-gray-300">Pago inicial: $500 USD</span></div>
+                  <div class="flex items-start"><span class="text-2xl mr-3">💳</span><span class="text-gray-700 dark:text-gray-300">8 cuotas mensuales: $337.50 USD cada una</span></div>
+                  <div class="flex items-start"><span class="text-2xl mr-3">💰</span><span class="text-gray-700 dark:text-gray-300">Total: $3,200 USD sin intereses</span></div>
+                  <div class="flex items-start"><span class="text-2xl mr-3">📅</span><span class="text-gray-700 dark:text-gray-300">Primera cuota: 30 días después del inicio</span></div>
+              <% end %>
+            </div>
+          </div>
+        </div>
+
+        <!-- First Client Benefits -->
+        <div class="bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 rounded-xl p-6 mb-8">
+          <h4 class="text-xl font-bold text-gray-900 dark:text-white mb-4">
+            🏆 Beneficios Exclusivos de Primer Cliente
+          </h4>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <%= for benefit <- @first_client_benefits do %>
+              <div class="flex items-start">
+                <span class="text-2xl mr-3">⭐</span>
+                <span class="text-gray-700 dark:text-gray-300"><%= benefit %></span>
+              </div>
+            <% end %>
+          </div>
+        </div>
+
+        <!-- Guarantees -->
+        <div class="bg-yellow-50 dark:bg-gray-700 rounded-xl p-6 mb-8">
+          <h4 class="text-xl font-bold text-gray-900 dark:text-white mb-4">
+            🛡️ Garantías Lifetime
+          </h4>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <%= for guarantee <- @guarantees do %>
+              <div class="flex items-start">
+                <span class="text-2xl mr-3">🛡️</span>
+                <span class="text-gray-700 dark:text-gray-300"><%= guarantee %></span>
+              </div>
+            <% end %>
+          </div>
+        </div>
+
+        <!-- CTA Buttons -->
+        <div class="flex flex-col sm:flex-row gap-4 justify-center pt-6 border-t border-gray-200 dark:border-gray-700">
+          <button phx-click="show_contact_form"
+                  class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-lg transition duration-200 transform hover:scale-105">
+            📞 Solicitar Propuesta Detallada
+          </button>
+          <button phx-click="close_plan_details"
+                  class="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-3 px-8 rounded-lg transition duration-200">
+            🔍 Ver Otros Planes
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+<% end %>
+
+<!-- Contact Form Modal -->
+<%= if @show_contact_form do %>
+  <div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" id="contact-modal">
+    <div class="relative top-4 mx-auto p-5 border w-11/12 max-w-2xl shadow-lg rounded-md bg-white dark:bg-gray-800">
+      <div class="mt-3">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-6">
+          <h3 class="text-lg font-medium text-gray-900 dark:text-white">
+            📞 Solicitar Propuesta Detallada
+          </h3>
+          <button phx-click="close_contact_form" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Form -->
+        <form phx-submit="submit_contact_form" class="space-y-4">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Nombre *</label>
+              <input type="text" phx-keyup="update_contact_form" phx-value-field="name" value={@contact_form.name} required
+                     class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Email *</label>
+              <input type="email" phx-keyup="update_contact_form" phx-value-field="email" value={@contact_form.email} required
+                     class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Empresa</label>
+              <input type="text" phx-keyup="update_contact_form" phx-value-field="company" value={@contact_form.company}
+                     class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Teléfono</label>
+              <input type="tel" phx-keyup="update_contact_form" phx-value-field="phone" value={@contact_form.phone}
+                     class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+            </div>
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Plan de Interés</label>
+            <select phx-keyup="update_contact_form" phx-value-field="selected_plan" value={@contact_form.selected_plan}
+                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+              <option value="">Seleccionar plan...</option>
+              <option value="premium">Plan Premium - $2,500 USD</option>
+              <option value="standard">Plan Estándar - $3,000 USD</option>
+              <option value="flexible">Plan Flexible - $3,200 USD</option>
+            </select>
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Mensaje</label>
+            <textarea phx-keyup="update_contact_form" phx-value-field="message" rows="4" value={@contact_form.message}
+                      class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      placeholder="Cuéntanos sobre tu proyecto y necesidades específicas..."></textarea>
+          </div>
+
+          <!-- Buttons -->
+          <div class="flex justify-end space-x-3 pt-4">
+            <button type="button" phx-click="close_contact_form"
+                    class="bg-gray-300 hover:bg-gray-400 text-gray-700 font-medium py-2 px-4 rounded-lg">
+              Cancelar
+            </button>
+            <button type="submit"
+                    class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-lg">
+              Enviar Solicitud
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+<% end %> 

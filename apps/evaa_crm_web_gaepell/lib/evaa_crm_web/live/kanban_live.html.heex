@@ -1,0 +1,715 @@
+<!-- Loading indicator -->
+<%= if @loading do %>
+  <div class="flex justify-center items-center py-8">
+    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+    <span class="ml-2 text-gray-600">Cargando...</span>
+  </div>
+<% end %>
+
+<!-- Tab Selector -->
+<div class="border-b border-gray-200 dark:border-gray-700 mb-6">
+  <ul class="flex flex-wrap -mb-px text-sm font-medium text-center text-gray-500 dark:text-gray-400">
+    <li class="me-2">
+      <a href="#" phx-click="switch_tab" phx-value-tab="dashboard" 
+         class={"inline-flex items-center justify-center p-4 border-b-2 rounded-t-lg hover:text-gray-600 hover:border-gray-300 dark:hover:text-gray-300 group " <>
+           (if @current_tab == "dashboard", do: "text-blue-600 border-blue-600 dark:text-blue-500 dark:border-blue-500", else: "border-transparent")}>
+        <svg class={"w-4 h-4 me-2 " <> (if @current_tab == "dashboard", do: "text-blue-600 dark:text-blue-500", else: "text-gray-400 group-hover:text-gray-500 dark:text-gray-500 dark:group-hover:text-gray-300")} aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
+          <path d="M10 0a10 10 0 1 0 10 10A10.011 10.011 0 0 0 10 0Zm0 5a3 3 0 1 1 0 6 3 3 0 0 1 0-6Zm0 13a8.949 8.949 0 0 1-4.951-1.488A3.987 3.987 0 0 1 9 13h2a3.987 3.987 0 0 1 3.951 3.512A8.949 8.949 0 0 1 10 18Z"/>
+        </svg>Dashboard
+      </a>
+    </li>
+    <li class="me-2">
+      <a href="#" phx-click="switch_tab" phx-value-tab="kanban" 
+         class={"inline-flex items-center justify-center p-4 border-b-2 rounded-t-lg hover:text-gray-600 hover:border-gray-300 dark:hover:text-gray-300 group " <>
+           (if @current_tab == "kanban", do: "text-blue-600 border-blue-600 dark:text-blue-500 dark:border-blue-500", else: "border-transparent")}>
+        <svg class={"w-4 h-4 me-2 " <> (if @current_tab == "kanban", do: "text-blue-600 dark:text-blue-500", else: "text-gray-400 group-hover:text-gray-500 dark:text-gray-500 dark:group-hover:text-gray-300")} aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 18 18">
+          <path d="M6.143 0H1.857A1.857 1.857 0 0 0 0 1.857v4.286C0 7.169.831 8 1.857 8h4.286A1.857 1.857 0 0 0 8 6.143V1.857A1.857 1.857 0 0 0 6.143 0Zm10 0h-4.286A1.857 1.857 0 0 0 10 1.857v4.286C10 7.169 10.831 8 11.857 8h4.286A1.857 1.857 0 0 0 18 6.143V1.857A1.857 1.857 0 0 0 16.143 0Zm-10 10H1.857A1.857 1.857 0 0 0 0 11.857v4.286C0 17.169.831 18 1.857 18h4.286A1.857 1.857 0 0 0 8 16.143v-4.286A1.857 1.857 0 0 0 6.143 10Zm10 0h-4.286A1.857 1.857 0 0 0 10 11.857v4.286c0 1.026.831 1.857 1.857 1.857h4.286A1.857 1.857 0 0 0 18 16.143v-4.286A1.857 1.857 0 0 0 16.143 10Z"/>
+        </svg>Kanban
+      </a>
+    </li>
+  </ul>
+</div>
+
+<!-- Contenido del Tab Kanban -->
+<%= if @current_tab == "kanban" do %>
+  <!-- Vista Horizontal Integrada -->
+  <div id="kanban-container" class="kanban-horizontal-view space-y-4" phx-hook="KanbanDragDrop">
+  <%= for workflow_data <- @items do %>
+    <div class="workflow-pipeline">
+      <!-- Header del Workflow -->
+      <div class="workflow-header mb-3">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <div class="flex items-center gap-2">
+              <%= case workflow_data.workflow.workflow_type do %>
+                <% "events" -> %>
+                  <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6l4 2"/>
+                  </svg>
+                <% "maintenance" -> %>
+                  <svg class="w-5 h-5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536M9 13h3l6 6M3 21l6-6m0 0V9a3 3 0 013-3h3m-6 6l-6 6"/>
+                  </svg>
+                <% "leads" -> %>
+                  <svg class="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                  </svg>
+                <% _ -> %>
+                  <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                  </svg>
+              <% end %>
+              <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">
+                <%= workflow_data.workflow.name %>
+              </h3>
+            </div>
+            <span class="text-xs text-gray-500 dark:text-gray-400">
+              (<%= workflow_data.total_items %>)
+            </span>
+          </div>
+          <div class="flex items-center gap-2">
+            <%= case workflow_data.workflow.workflow_type do %>
+              <% "maintenance" -> %>
+                <button phx-click="new_ticket" phx-value-workflow={workflow_data.workflow.id}
+                  class="bg-orange-600 hover:bg-orange-700 text-white px-2 py-1 rounded text-xs font-medium transition-colors duration-200 flex items-center gap-1"
+                  title="Nuevo Ticket de Mantenimiento">
+                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
+                  +
+                </button>
+              <% "leads" -> %>
+                <button phx-click="new_lead" phx-value-workflow={workflow_data.workflow.id}
+                  class="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded text-xs font-medium transition-colors duration-200 flex items-center gap-1"
+                  title="Nuevo Prospecto">
+                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
+                  +
+                </button>
+              <% "production" -> %>
+                <button phx-click="new_production_order" phx-value-workflow={workflow_data.workflow.id}
+                  class="bg-purple-600 hover:bg-purple-700 text-white px-2 py-1 rounded text-xs font-medium transition-colors duration-200 flex items-center gap-1"
+                  title="Nueva Orden de Producción">
+                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
+                  +
+                </button>
+              <% _ -> %>
+                <button phx-click="add_item" phx-value-workflow={workflow_data.workflow.id}
+                  class="bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded text-xs font-medium transition-colors duration-200 flex items-center gap-1"
+                  title="Agregar">
+                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
+                  +
+                </button>
+            <% end %>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pipeline Horizontal -->
+      <div class="workflow-pipeline-board flex gap-3 overflow-x-auto pb-2">
+        <%= for state_data <- workflow_data.states do %>
+          <div class={"kanban-col bg-white/80 dark:bg-[#23272f]/80 backdrop-blur-lg rounded-xl p-3 min-w-[280px] flex-shrink-0 border border-gray-200/60 dark:border-[#2d323c]/60 shadow-lg transition-all duration-200 hover:scale-[1.01] group relative"}
+               data-kanban-column 
+               data-status={state_data.state.name} 
+               data-workflow={workflow_data.workflow.id}>
+            
+            <!-- Header de la Columna -->
+            <div class={"kanban-col-header font-bold mb-3 flex items-center justify-between px-2 py-2 rounded-t-lg border-b-2"}
+                 style={"border-color: #{state_data.state.color}60; color: #{state_data.state.color};"}>
+              <span class="flex items-center gap-2">
+                <div class="w-2.5 h-2.5 rounded-full" style={"background-color: #{state_data.state.color}"}></div>
+                <span class="text-xs font-semibold"><%= state_data.state.label %></span>
+              </span>
+              <span class={"text-xs font-bold px-2 py-0.5 rounded-full shadow"}
+                   style={"background-color: #{state_data.state.color}20; color: #{state_data.state.color};"}>
+                <%= state_data.count %>
+              </span>
+            </div>
+
+            <!-- Items de la Columna -->
+            <div class="kanban-col-cards space-y-2 min-h-[100px]">
+              <%= for item <- state_data.items do %>
+                <div data-id={get_item_id_with_prefix(item)} 
+                     class={"kanban-card rounded-lg shadow-md p-2 cursor-move flex flex-col gap-1 border-l-3 transition-all duration-200 group/card relative bg-white/90 dark:bg-[#23272f]/80 backdrop-blur-lg border-opacity-60 hover:scale-[1.02] hover:shadow-lg " <>
+                       (case item.workflow_type do
+                         "maintenance" -> "border-orange-400/80"
+                         "production" -> "border-purple-400/80"
+                         "leads" -> "border-green-400/80"
+                         _ -> "border-blue-400/80"
+                       end)}
+                     phx-value-id={get_item_id_with_prefix(item)}
+                     draggable="true">
+                  
+                  <!-- Título y Tipo -->
+                  <div class="flex items-center gap-1 mb-1">
+                    <span class="font-semibold text-xs tracking-tight text-gray-800 dark:text-gray-100 truncate">
+                      <%= item.title %>
+                    </span>
+                    <span class={"text-xs font-bold px-1.5 py-0.5 rounded-full shadow " <>
+                      (case item.workflow_type do
+                        "maintenance" -> "bg-orange-200 text-orange-900 dark:bg-orange-900/60 dark:text-orange-200"
+                        "production" -> "bg-purple-200 text-purple-900 dark:bg-purple-900/60 dark:text-purple-200"
+                        "leads" -> "bg-green-200 text-green-900 dark:bg-green-900/60 dark:text-green-200"
+                        _ -> "bg-blue-200 text-blue-900 dark:bg-blue-900/60 dark:text-blue-200"
+                      end)}>
+                      <%= case item.workflow_type do
+                        "maintenance" -> "T"
+                        "production" -> "P"
+                        "leads" -> "L"
+                        _ -> "E"
+                      end %>
+                    </span>
+                  </div>
+
+                  <!-- Información Adicional Compacta -->
+                  <div class="flex flex-wrap items-center gap-1 text-xs text-gray-500 dark:text-gray-300 mb-1">
+                    <%= if item.company_name, do: raw("<span class='inline-flex items-center gap-0.5'><svg class='w-2.5 h-2.5 opacity-60' fill='none' stroke='currentColor' viewBox='0 0 24 24'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M3 7v4a1 1 0 001 1h3m10-5h3a1 1 0 011 1v4a1 1 0 01-1 1h-3m-10 0v6a1 1 0 001 1h8a1 1 0 001-1v-6m-10 0h10'/></svg>" <> String.slice(item.company_name, 0, 8) <> "</span>") %>
+                    <%= if item.due_date, do: raw("<span class='inline-flex items-center gap-0.5'><svg class='w-2.5 h-2.5 opacity-60' fill='none' stroke='currentColor' viewBox='0 0 24 24'><rect width='18' height='18' x='3' y='3' rx='2' stroke-width='2'/><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M8 7v2m8-2v2m-9 4h10'/></svg>" <> Calendar.strftime(item.due_date, "%d/%m") <> "</span>") %>
+                  </div>
+
+                  <!-- Responsable Compacto -->
+                  <div class="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 mb-1">
+                    <span class="truncate">Resp: <%= if Map.has_key?(item, :specialist_name), do: String.slice(item.specialist_name || "", 0, 8), else: get_specialist_name(item.specialist_id) || "-" %></span>
+                  </div>
+
+                  <!-- Acciones Rápidas Compactas -->
+                  <div class="mt-1 flex gap-1" data-no-dnd>
+                    <button phx-click="show_item_details" 
+                            phx-value-id={get_item_id_with_prefix(item)} 
+                            class="text-blue-600 dark:text-blue-400 text-xs flex items-center gap-0.5 hover:underline group-hover/card:scale-110 transition-transform" 
+                            title="Ver más">
+                      <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                      </svg> 
+                      Ver
+                    </button>
+                  </div>
+
+                  <!-- Feedback visual drag & drop -->
+                  <div class="absolute inset-0 rounded-lg pointer-events-none opacity-0 group-hover:opacity-10 transition-all duration-200 bg-gradient-to-br from-blue-200/40 via-white/20 to-blue-100/30"></div>
+                </div>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
+</div>
+<% end %>
+
+<!-- Contenido del Tab Dashboard -->
+<%= if @current_tab == "dashboard" do %>
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <!-- Card de Tickets -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 border border-gray-200 dark:border-gray-700">
+      <div class="flex items-center">
+        <div class="p-3 rounded-full bg-orange-100 dark:bg-orange-900/20">
+          <svg class="w-6 h-6 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536M9 13h3l6 6M3 21l6-6m0 0V9a3 3 0 013-3h3m-6 6l-6 6"/>
+          </svg>
+        </div>
+        <div class="ml-4">
+          <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Tickets Activos</p>
+          <p class="text-2xl font-bold text-gray-900 dark:text-white"><%= @dashboard_stats.tickets_activos %></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card de Leads -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 border border-gray-200 dark:border-gray-700">
+      <div class="flex items-center">
+        <div class="p-3 rounded-full bg-green-100 dark:bg-green-900/20">
+          <svg class="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+          </svg>
+        </div>
+        <div class="ml-4">
+          <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Leads Nuevos</p>
+          <p class="text-2xl font-bold text-gray-900 dark:text-white"><%= @dashboard_stats.leads_nuevos %></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card de Producción -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 border border-gray-200 dark:border-gray-700">
+      <div class="flex items-center">
+        <div class="p-3 rounded-full bg-purple-100 dark:bg-purple-900/20">
+          <svg class="w-6 h-6 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2a4 4 0 014-4h4m0 0V7a4 4 0 00-4-4H7a4 4 0 00-4 4v10a4 4 0 004 4h4"/>
+          </svg>
+        </div>
+        <div class="ml-4">
+          <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Órdenes en Producción</p>
+          <p class="text-2xl font-bold text-gray-900 dark:text-white"><%= @dashboard_stats.ordenes_produccion %></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card de Camiones -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 border border-gray-200 dark:border-gray-700">
+      <div class="flex items-center">
+        <div class="p-3 rounded-full bg-blue-100 dark:bg-blue-900/20">
+          <svg class="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3a4 4 0 118 0v4m-4 6v6m-4-6h8m-8 6h8"/>
+          </svg>
+        </div>
+        <div class="ml-4">
+          <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Camiones Activos</p>
+          <p class="text-2xl font-bold text-gray-900 dark:text-white"><%= @dashboard_stats.camiones_activos %></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sección de Gráficos -->
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700 mb-8">
+    <h2 class="text-xl font-bold text-center text-gray-900 dark:text-white mb-4">Resumen de Actividad</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <!-- Gráfica de Actividad -->
+      <div>
+        <h3 class="text-base font-semibold text-gray-700 dark:text-gray-200 text-center mb-2">Actividad Reciente</h3>
+        <div class="flex items-end h-40 space-x-2">
+          <%= for {date, count} <- @activity_chart_data do %>
+            <div class="flex flex-col items-center flex-1">
+              <div class="w-7 rounded-t-lg bg-gradient-to-t from-blue-400 to-blue-600 dark:from-blue-700 dark:to-blue-400 shadow-md"
+                   style={"height: #{count * 20 + 8}px"}>
+              </div>
+              <span class="text-xs text-gray-500 mt-1"><%= Calendar.strftime(date, "%d/%m") %></span>
+            </div>
+          <% end %>
+        </div>
+      </div>
+      <!-- Gráfica de Estados -->
+      <div>
+        <h3 class="text-base font-semibold text-gray-700 dark:text-gray-200 text-center mb-2">Distribución de Estados</h3>
+        <div class="flex items-end h-40 space-x-2">
+          <%= for {status, count} <- @status_distribution_data do %>
+            <div class="flex flex-col items-center flex-1">
+              <div class={"w-7 rounded-t-lg shadow-md " <>
+                case status do
+                  "check_out" -> "bg-gradient-to-t from-green-400 to-green-600 dark:from-green-700 dark:to-green-400"
+                  "completed" -> "bg-gradient-to-t from-blue-400 to-blue-600 dark:from-blue-700 dark:to-blue-400"
+                  "pending" -> "bg-gradient-to-t from-yellow-400 to-yellow-600 dark:from-yellow-700 dark:to-yellow-400"
+                  _ -> "bg-gradient-to-t from-gray-400 to-gray-600 dark:from-gray-700 dark:to-gray-400"
+                end
+              }
+              style={"height: #{count * 20 + 8}px"}>
+              </div>
+              <span class="text-xs text-gray-500 mt-1"><%= status_label(status) %></span>
+    </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sección de Actividad Reciente -->
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 border border-gray-200 dark:border-gray-700">
+    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Actividad Reciente</h3>
+    <div class="space-y-4">
+      <%= for act <- @dashboard_recent_activities do %>
+      <div class="flex items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+          <div class={
+            case act.type do
+              :ticket -> "w-2 h-2 bg-green-500 rounded-full mr-3"
+              :lead -> "w-2 h-2 bg-blue-500 rounded-full mr-3"
+              :order -> "w-2 h-2 bg-purple-500 rounded-full mr-3"
+              :activity -> "w-2 h-2 bg-orange-500 rounded-full mr-3"
+              :feedback -> "w-2 h-2 bg-pink-500 rounded-full mr-3"
+              _ -> "w-2 h-2 bg-gray-400 rounded-full mr-3"
+            end
+          }></div>
+        <div class="flex-1">
+            <p class="text-sm font-medium text-gray-900 dark:text-white">
+              <%= case act.type do
+                :ticket -> "Nuevo ticket creado"
+                :lead -> "Nuevo lead creado"
+                :order -> "Nueva orden de producción"
+                :activity -> "Nueva actividad"
+                :feedback -> "Reporte de bug/feedback (" <> (act.status || "abierto") <> ")"
+                :feedback_comment -> "Nuevo comentario en bug"
+                _ -> "Actividad"
+              end %>
+            </p>
+            <%= if act.type == :feedback do %>
+              <a href={"/feedback#bug-" <> to_string(act.id)} class="text-xs text-pink-600 dark:text-pink-400 underline hover:font-bold transition">
+                <%= act.title %>
+                <%= if act.subtitle, do: " - " <> act.subtitle %>
+              </a>
+            <% else %>
+              <%= if act.type == :feedback_comment do %>
+                <a href={"/feedback#bug-" <> to_string(act.feedback_id)} class="text-xs text-pink-600 dark:text-pink-400 underline hover:font-bold transition">
+                  <%= act.title %>
+                  <%= if act.author, do: " por " <> act.author %>
+                  <%= if act.subtitle, do: ": " <> act.subtitle %>
+                </a>
+              <% else %>
+                <p class="text-xs text-gray-500 dark:text-gray-400">
+                  <%= act.title %>
+                  <%= if act.subtitle, do: " - " <> act.subtitle %>
+                </p>
+              <% end %>
+            <% end %>
+        </div>
+          <span class="text-xs text-gray-400">
+            <%= human_relative_time(act.inserted_at) %>
+          </span>
+        </div>
+      <% end %>
+    </div>
+  </div>
+<% end %>
+
+<%= if @show_modal && (!@modal_item && !@modal_type) do %>
+  <div class="fixed inset-0 bg-black/70 dark:bg-black/80 flex items-center justify-center z-50">
+    <div class="bg-white dark:bg-[#23272f] rounded-lg shadow-2xl w-full max-w-xs flex flex-col border border-gray-200 dark:border-[#2d323c] p-8 items-center">
+      <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4">¿Qué deseas crear?</h3>
+      <div class="flex flex-col gap-4 w-full">
+        <button phx-click="select_modal_type" phx-value-type="ticket" class="bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 rounded-lg flex items-center gap-2 justify-center">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536M9 13h3l6 6M3 21l6-6m0 0V9a3 3 0 013-3h3m-6 6l-6 6"/></svg>
+          Nuevo Ticket de Mantenimiento
+        </button>
+
+      </div>
+      <button phx-click="close_modal" class="mt-6 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">Cancelar</button>
+    </div>
+  </div>
+<% end %>
+
+
+
+<%= if @show_ticket_details_modal && @ticket_details do %>
+  <div class="fixed inset-0 bg-black/70 dark:bg-black/80 flex items-center justify-center z-50" phx-click="close_ticket_details" phx-window-keydown="close_ticket_details" phx-key="escape" phx-capture-click>
+    <div class="bg-white dark:bg-[#23272f] rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col border border-gray-200 dark:border-[#2d323c] relative overflow-y-auto" phx-click="ignore">
+      <div class="flex items-center gap-3 p-5 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-orange-100/60 via-white/80 to-blue-100/60 dark:from-orange-900/20 dark:via-[#23272f] dark:to-blue-900/20 rounded-t-2xl">
+        <span class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-orange-500/90 text-white shadow-lg">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536M9 13h3l6 6M3 21l6-6m0 0V9a3 3 0 013-3h3m-6 6l-6 6"/></svg>
+        </span>
+        <div>
+          <h3 class="text-xl font-bold text-gray-900 dark:text-gray-100 leading-tight">Ticket #<%= @ticket_details.id %></h3>
+          <p class="text-xs text-gray-500 dark:text-gray-400">Detalles completos del ticket</p>
+        </div>
+        <button phx-click="close_ticket_details" class="ml-auto text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 text-2xl font-bold">&times;</button>
+      </div>
+      <div class="flex-1 flex flex-col min-h-0 px-6 py-4 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Camión</label>
+            <div class="mt-1 text-sm text-gray-800 dark:text-gray-100 font-semibold">
+              <%= @ticket_details.truck && @ticket_details.truck.brand %> <%= @ticket_details.truck && @ticket_details.truck.model %> (<%= @ticket_details.truck && @ticket_details.truck.license_plate %>)
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Fecha de Ingreso</label>
+            <div class="mt-1 text-sm text-gray-800 dark:text-gray-100 font-semibold">
+              <%= if @ticket_details.entry_date, do: Calendar.strftime(@ticket_details.entry_date, "%d/%m/%Y %H:%M"), else: "-" %>
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Kilometraje</label>
+            <div class="mt-1 text-sm text-gray-800 dark:text-gray-100 font-semibold">
+              <%= @ticket_details.mileage || "-" %>
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Nivel de Combustible</label>
+            <div class="mt-1 text-sm text-gray-800 dark:text-gray-100 font-semibold">
+              <%= @ticket_details.fuel_level || "-" %>
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Estado</label>
+            <div class="mt-1 text-sm text-gray-800 dark:text-gray-100 font-semibold">
+              <%= @ticket_details.status || "-" %>
+            </div>
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Título</label>
+          <div class="mt-1 text-sm text-gray-800 dark:text-gray-100 font-semibold">
+            <%= @ticket_details.title %>
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Daños Visibles</label>
+          <div class="mt-1 text-sm text-gray-800 dark:text-gray-100">
+            <%= @ticket_details.visible_damage || "-" %>
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Notas de Salida</label>
+          <div class="mt-1 text-sm text-gray-800 dark:text-gray-100">
+            <%= @ticket_details.exit_notes || "-" %>
+          </div>
+        </div>
+        <div class="flex items-center gap-4 mt-2">
+          <div>
+            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Color del Evento</label>
+            <div class="w-8 h-8 rounded-full shadow border border-gray-300 dark:border-gray-600" style={"background: #{@ticket_details.color || "#2563eb"}"}></div>
+          </div>
+        </div>
+        <%= if @ticket_details.damage_photos && length(@ticket_details.damage_photos) > 0 do %>
+          <div class="mt-4">
+            <h4 class="text-xs font-bold text-gray-700 dark:text-gray-300 mb-2">Fotos del Ticket</h4>
+            <div class="flex flex-wrap gap-2">
+              <%= for photo_url <- @ticket_details.damage_photos do %>
+                <a href={photo_url} target="_blank">
+                  <img src={photo_url} class="w-20 h-20 object-cover rounded shadow border border-gray-200 dark:border-gray-700 hover:scale-105 transition" />
+                </a>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+<% end %>
+
+<%= if @show_lead_details_modal && @lead_details do %>
+  <div class="fixed inset-0 bg-black/70 dark:bg-black/80 flex items-center justify-center z-50" phx-click="close_ticket_details" phx-window-keydown="close_ticket_details" phx-key="escape" phx-capture-click>
+    <div class="bg-white dark:bg-[#23272f] rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col border border-gray-200 dark:border-[#2d323c] relative overflow-y-auto" phx-click="ignore">
+      <div class="flex items-center gap-3 p-5 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-green-100/60 via-white/80 to-blue-100/60 dark:from-green-900/20 dark:via-[#23272f] dark:to-blue-900/20 rounded-t-2xl">
+        <span class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-green-500/90 text-white shadow-lg">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+        </span>
+        <div>
+          <h3 class="text-xl font-bold text-gray-900 dark:text-gray-100 leading-tight">Lead #<%= @lead_details.id %></h3>
+          <p class="text-xs text-gray-500 dark:text-gray-400">Detalles completos del lead</p>
+        </div>
+        <button phx-click="close_ticket_details" class="ml-auto text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 text-2xl font-bold">&times;</button>
+      </div>
+      <div class="flex-1 flex flex-col min-h-0 px-6 py-4 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Nombre</label>
+            <div class="mt-1 text-sm text-gray-800 dark:text-gray-100 font-semibold">
+              <%= @lead_details.name %>
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
+            <div class="mt-1 text-sm text-gray-800 dark:text-gray-100 font-semibold">
+              <%= @lead_details.email || "-" %>
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Teléfono</label>
+            <div class="mt-1 text-sm text-gray-800 dark:text-gray-100 font-semibold">
+              <%= @lead_details.phone || "-" %>
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Estado</label>
+            <div class="mt-1 text-sm text-gray-800 dark:text-gray-100 font-semibold">
+              <%= @lead_details.status || "-" %>
+            </div>
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Notas</label>
+          <div class="mt-1 text-sm text-gray-800 dark:text-gray-100">
+            <%= @lead_details.notes || "-" %>
+          </div>
+        </div>
+        <div class="flex items-center gap-4 mt-2">
+          <div>
+            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Fecha de creación</label>
+            <div class="mt-1 text-sm text-gray-800 dark:text-gray-100 font-semibold">
+              <%= if @lead_details.inserted_at, do: Calendar.strftime(@lead_details.inserted_at, "%d/%m/%Y %H:%M"), else: "-" %>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+<% end %>
+
+<%= if @show_production_details_modal && @production_details do %>
+  <div class="fixed inset-0 bg-black/70 dark:bg-black/80 flex items-center justify-center z-50" phx-click="close_ticket_details" phx-window-keydown="close_ticket_details" phx-key="escape" phx-capture-click>
+    <div class="bg-white dark:bg-[#23272f] rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col border border-gray-200 dark:border-[#2d323c] relative overflow-y-auto" phx-click="ignore">
+      <div class="flex items-center gap-3 p-5 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-purple-100/60 via-white/80 to-blue-100/60 dark:from-purple-900/20 dark:via-[#23272f] dark:to-blue-900/20 rounded-t-2xl">
+        <span class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-purple-500/90 text-white shadow-lg">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2a4 4 0 014-4h4m0 0V7a4 4 0 00-4-4H7a4 4 0 00-4 4v10a4 4 0 004 4h4"/></svg>
+        </span>
+        <div>
+          <h3 class="text-xl font-bold text-gray-900 dark:text-gray-100 leading-tight">Producción #<%= @production_details.id %></h3>
+          <p class="text-xs text-gray-500 dark:text-gray-400">Detalles completos de la orden de producción</p>
+        </div>
+        <button phx-click="close_ticket_details" class="ml-auto text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 text-2xl font-bold">&times;</button>
+      </div>
+      <div class="flex-1 flex flex-col min-h-0 px-6 py-4 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Cliente</label>
+            <div class="mt-1 text-sm text-gray-800 dark:text-gray-100 font-semibold">
+              <%= @production_details.client_name || "-" %>
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Camión</label>
+            <div class="mt-1 text-sm text-gray-800 dark:text-gray-100 font-semibold">
+              <%= [@production_details.truck_brand, @production_details.truck_model, "(" <> (@production_details.license_plate || "-") <> ")"] |> Enum.reject(&is_nil/1) |> Enum.join(" ") %>
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Estado</label>
+            <div class="mt-1 text-sm text-gray-800 dark:text-gray-100 font-semibold">
+              <%= @production_details.status || "-" %>
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Fecha estimada</label>
+            <div class="mt-1 text-sm text-gray-800 dark:text-gray-100 font-semibold">
+              <%= if @production_details.estimated_delivery, do: Calendar.strftime(@production_details.estimated_delivery, "%d/%m/%Y"), else: "-" %>
+            </div>
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Especificaciones</label>
+          <div class="mt-1 text-sm text-gray-800 dark:text-gray-100">
+            <%= @production_details.specifications || "-" %>
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Notas</label>
+          <div class="mt-1 text-sm text-gray-800 dark:text-gray-100">
+            <%= @production_details.notes || "-" %>
+          </div>
+        </div>
+        <div class="flex items-center gap-4 mt-2">
+          <div>
+            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Fecha de creación</label>
+            <div class="mt-1 text-sm text-gray-800 dark:text-gray-100 font-semibold">
+              <%= if @production_details.inserted_at, do: Calendar.strftime(@production_details.inserted_at, "%d/%m/%Y %H:%M"), else: "-" %>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+<% end %>
+
+<%= if @show_modal && @modal_item && @modal_type == "lead" do %>
+  <div class="fixed inset-0 bg-black/70 dark:bg-black/80 flex items-center justify-center z-50" phx-click="close_modal" phx-window-keydown="close_modal" phx-key="escape" phx-capture-click>
+    <div class="bg-white dark:bg-[#23272f] rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col border border-gray-200 dark:border-[#2d323c] relative overflow-y-auto" phx-click="ignore">
+      <div class="flex items-center gap-3 p-5 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-green-100/60 via-white/80 to-blue-100/60 dark:from-green-900/20 dark:via-[#23272f] dark:to-blue-900/20 rounded-t-2xl">
+        <span class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-green-500/90 text-white shadow-lg">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+        </span>
+        <div>
+          <h3 class="text-xl font-bold text-gray-900 dark:text-gray-100 leading-tight"> <%= if @modal_item.id, do: "Editar Prospecto", else: "Nuevo Prospecto" %> </h3>
+          <p class="text-xs text-gray-500 dark:text-gray-400">Completa la información del prospecto</p>
+        </div>
+        <button phx-click="close_modal" class="ml-auto text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 text-2xl font-bold">&times;</button>
+      </div>
+      <.form :let={f} for={@modal_changeset} phx-submit="save_modal_lead" class="flex-1 flex flex-col min-h-0 px-6 py-4 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Nombre</label>
+            <input type="text" name="lead[name]" value={f.data.name} required autofocus class="mt-1 block w-full px-2 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm dark:bg-gray-700 dark:text-white" />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
+            <input type="email" name="lead[email]" value={f.data.email} class="mt-1 block w-full px-2 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm dark:bg-gray-700 dark:text-white" />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Teléfono</label>
+            <input type="text" name="lead[phone]" value={f.data.phone} class="mt-1 block w-full px-2 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm dark:bg-gray-700 dark:text-white" />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Estado</label>
+            <select name="lead[status]" value={f.data.status} class="mt-1 block w-full px-2 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm dark:bg-gray-700 dark:text-white">
+              <option value="new">Nuevo</option>
+              <option value="contacted">Contactado</option>
+              <option value="qualified">Calificado</option>
+              <option value="converted">Convertido</option>
+              <option value="lost">Perdido</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Notas</label>
+          <textarea name="lead[notes]" class="mt-1 block w-full px-2 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm dark:bg-gray-700 dark:text-white"><%= f.data.notes %></textarea>
+        </div>
+        <div class="flex justify-end gap-2 mt-4">
+          <button type="button" phx-click="close_modal" class="bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 px-4 py-2 rounded font-medium hover:bg-gray-300 dark:hover:bg-gray-600">Cancelar</button>
+          <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded font-bold">Guardar</button>
+        </div>
+      </.form>
+    </div>
+  </div>
+<% end %>
+
+<%= if @show_modal && @modal_item && @modal_type == "production" do %>
+  <div class="fixed inset-0 bg-black/70 dark:bg-black/80 flex items-center justify-center z-50" phx-click="close_modal" phx-window-keydown="close_modal" phx-key="escape" phx-capture-click>
+    <div class="bg-white dark:bg-[#23272f] rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col border border-gray-200 dark:border-[#2d323c] relative overflow-y-auto" phx-click="ignore">
+      <div class="flex items-center gap-3 p-5 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-purple-100/60 via-white/80 to-blue-100/60 dark:from-purple-900/20 dark:via-[#23272f] dark:to-blue-900/20 rounded-t-2xl">
+        <span class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-purple-500/90 text-white shadow-lg">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2a4 4 0 014-4h4m0 0V7a4 4 0 00-4-4H7a4 4 0 00-4 4v10a4 4 0 004 4h4"/></svg>
+        </span>
+        <div>
+          <h3 class="text-xl font-bold text-gray-900 dark:text-gray-100 leading-tight"> <%= if @modal_item.id, do: "Editar Orden de Producción", else: "Nueva Orden de Producción" %> </h3>
+          <p class="text-xs text-gray-500 dark:text-gray-400">Completa la información de la orden</p>
+        </div>
+        <button phx-click="close_modal" class="ml-auto text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 text-2xl font-bold">&times;</button>
+      </div>
+      <.form :let={f} for={@modal_changeset} phx-submit="save_modal_production" class="flex-1 flex flex-col min-h-0 px-6 py-4 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Cliente</label>
+            <input type="text" name="production_order[client_name]" value={f.data.client_name} required autofocus class="mt-1 block w-full px-2 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm dark:bg-gray-700 dark:text-white" />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Marca Camión</label>
+            <input type="text" name="production_order[truck_brand]" value={f.data.truck_brand} class="mt-1 block w-full px-2 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm dark:bg-gray-700 dark:text-white" />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Modelo Camión</label>
+            <input type="text" name="production_order[truck_model]" value={f.data.truck_model} class="mt-1 block w-full px-2 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm dark:bg-gray-700 dark:text-white" />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Placa</label>
+            <input type="text" name="production_order[license_plate]" value={f.data.license_plate} class="mt-1 block w-full px-2 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm dark:bg-gray-700 dark:text-white" />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Tipo de Caja</label>
+            <select name="production_order[box_type]" class="mt-1 block w-full px-2 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm dark:bg-gray-700 dark:text-white">
+              <option value="dry_box" selected={f.data.box_type == "dry_box"}>Caja Seca</option>
+              <option value="refrigerated" selected={f.data.box_type == "refrigerated"}>Caja Refrigerada</option>
+              <option value="flatbed" selected={f.data.box_type == "flatbed"}>Plataforma</option>
+              <option value="tanker" selected={f.data.box_type == "tanker"}>Cisterna</option>
+              <option value="dump" selected={f.data.box_type == "dump"}>Volquete</option>
+              <option value="custom" selected={f.data.box_type == "custom"}>Personalizada</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Fecha estimada</label>
+            <input type="date" name="production_order[estimated_delivery]" value={if f.data.estimated_delivery, do: Calendar.strftime(f.data.estimated_delivery, "%Y-%m-%d"), else: ""} class="mt-1 block w-full px-2 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm dark:bg-gray-700 dark:text-white" />
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Especificaciones</label>
+          <textarea name="production_order[specifications]" class="mt-1 block w-full px-2 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm dark:bg-gray-700 dark:text-white"><%= f.data.specifications %></textarea>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Notas</label>
+          <textarea name="production_order[notes]" class="mt-1 block w-full px-2 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm dark:bg-gray-700 dark:text-white"><%= f.data.notes %></textarea>
+        </div>
+        <div class="flex justify-end gap-2 mt-4">
+          <button type="button" phx-click="close_modal" class="bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 px-4 py-2 rounded font-medium hover:bg-gray-300 dark:hover:bg-gray-600">Cancelar</button>
+          <button type="submit" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded font-bold">Guardar</button>
+        </div>
+      </.form>
+    </div>
+  </div>
+<% end %>
+
+<!-- Ticket Profile Modal -->
+<.ticket_profile_modal 
+  show_ticket_profile={@show_ticket_profile}
+  selected_ticket={@selected_ticket}
+  ticket_logs={@ticket_logs}
+  ticket_checkouts={@ticket_checkouts}
+/>
+
+ 

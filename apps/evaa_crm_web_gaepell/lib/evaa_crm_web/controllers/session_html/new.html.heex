@@ -1,0 +1,89 @@
+<main class="bg-gray-50 dark:bg-gray-900 min-h-screen">
+  <div class="flex flex-col justify-center items-center px-8 pt-12 mx-auto md:h-screen pt:mt-0 dark:bg-gray-900">
+    <!-- Logo -->
+    <a href="/" class="flex flex-col justify-center items-center mb-12 text-2xl font-semibold lg:mb-16 dark:text-white">
+      <img src="/images/logoeva1.png" class="h-16 mb-4" alt="EVA Logo">
+      <span class="text-3xl font-bold tracking-wide">EVA</span>
+      <span class="text-lg text-gray-600 dark:text-gray-400 mt-2 tracking-wide">Eficiencia Virtual Asistida</span>
+    </a>
+    
+    <!-- Card -->
+    <div class="justify-center items-center w-full bg-white rounded-xl shadow-2xl lg:flex md:mt-0 lg:max-w-screen-lg 2xl:max:max-w-screen-lg xl:p-0 dark:bg-gray-800">
+      <!-- Left side - Image -->
+      <div class="hidden w-2/3 lg:flex">
+        <div class="w-full h-full bg-gradient-to-br from-blue-600 to-purple-700 rounded-l-xl flex items-center justify-center">
+          <div class="text-center text-white p-12">
+            <svg class="w-32 h-32 mx-auto mb-8" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+              <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"></path>
+            </svg>
+            <h3 class="text-3xl font-bold mb-6 tracking-wide">Sistema de Gestión</h3>
+            <p class="text-blue-100 text-lg leading-relaxed tracking-wide">Administra tus actividades, tickets y clientes de manera eficiente</p>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Right side - Login Form -->
+      <div class="p-12 space-y-12 w-full sm:p-16 lg:p-24 lg:py-8">
+        <h2 class="text-3xl font-bold text-gray-900 lg:text-4xl dark:text-white tracking-wide">
+          Iniciar sesión
+        </h2>
+        
+        <!-- Error Message -->
+        <%= if @error do %>
+          <div class="p-6 mb-8 text-sm text-red-800 rounded-xl bg-red-50 dark:bg-gray-800 dark:text-red-400" role="alert">
+            <div class="flex items-center">
+              <svg class="flex-shrink-0 w-5 h-5 mr-3" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+              </svg>
+              <%= @error %>
+            </div>
+          </div>
+        <% end %>
+        
+        <!-- Current User Info -->
+        <%= if @current_user do %>
+          <div class="p-6 mb-8 text-sm text-green-800 rounded-xl bg-green-50 dark:bg-gray-800 dark:text-green-400" role="alert">
+            <div class="flex items-center">
+              <svg class="flex-shrink-0 w-5 h-5 mr-3" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+              </svg>
+              Sesión activa como: <b><%= @current_user.email %></b> (<%= @current_user.role %>)
+            </div>
+          </div>
+        <% end %>
+        
+        <form action="/login" method="post" class="mt-12 space-y-10">
+          <input type="hidden" name="_csrf_token" value={Plug.CSRFProtection.get_csrf_token()} />
+          
+          <div>
+            <label for="email" class="block mb-4 text-sm font-semibold text-gray-900 dark:text-white tracking-wide">Tu email</label>
+            <input type="email" name="email" id="email" class="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-xl focus:ring-blue-500 focus:border-blue-500 block w-full p-5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="usuario@empresa.com" required>
+          </div>
+          
+          <div>
+            <label for="password" class="block mb-4 text-sm font-semibold text-gray-900 dark:text-white tracking-wide">Tu contraseña</label>
+            <input type="password" name="password" id="password" placeholder="••••••••" class="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-xl focus:ring-blue-500 focus:border-blue-500 block w-full p-5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" required>
+          </div>
+          
+          <div class="flex items-start pt-4">
+            <div class="flex items-center h-5">
+              <input id="remember" aria-describedby="remember" name="remember" type="checkbox" class="w-5 h-5 bg-gray-50 rounded border-gray-300 focus:ring-3 focus:ring-blue-300 dark:focus:ring-blue-600 dark:ring-offset-gray-800 dark:bg-gray-700 dark:border-gray-600">
+            </div>
+            <div class="ml-4 text-sm">
+              <label for="remember" class="font-medium text-gray-900 dark:text-white tracking-wide">Recordarme</label>
+            </div>
+            <a href="#" class="ml-auto text-sm text-blue-700 hover:underline dark:text-blue-500 tracking-wide">¿Olvidaste tu contraseña?</a>
+          </div>
+          
+          <button type="submit" class="py-5 px-8 w-full text-lg font-semibold text-center text-white rounded-xl bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 sm:w-auto dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800 tracking-wide transition duration-200 mt-8">
+            Iniciar sesión
+          </button>
+          
+          <div class="text-sm font-medium text-gray-500 dark:text-gray-400 text-center tracking-wide pt-4">
+            ¿No tienes cuenta? <a href="#" class="text-blue-700 hover:underline dark:text-blue-500">Crear cuenta</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</main> 

@@ -1,0 +1,391 @@
+<div class="flex h-screen bg-gray-50 dark:bg-gray-900">
+  <!-- Sidebar Colapsable -->
+  <div class={"transition-all duration-300 ease-in-out #{if @show_sidebar, do: "w-64", else: "w-16"} bg-white dark:bg-gray-800 shadow-lg"}>
+    <div class="p-4">
+      <!-- Botón para colapsar/expandir sidebar -->
+      <button phx-click="toggle_sidebar" class="w-full flex items-center justify-center p-2 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+        <svg class="w-5 h-5 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+        </svg>
+      </button>
+      
+      <!-- Contenido del sidebar -->
+      <div class={"mt-4 #{if @show_sidebar, do: "block", else: "hidden"}"}>
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Filtros</h3>
+        
+        <!-- Filtro por año -->
+        <div class="space-y-2">
+          <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300">Año de Creación</h4>
+          <button phx-click="filter_by_year" phx-value-year="all" 
+                  class={"w-full text-left px-3 py-2 rounded-lg text-sm transition-colors #{if @selected_year == "all", do: "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300", else: "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"}"}>
+            Ver Todo
+          </button>
+          <%= for year <- @available_years do %>
+            <button phx-click="filter_by_year" phx-value-year={year} 
+                    class={"w-full text-left px-3 py-2 rounded-lg text-sm transition-colors #{if @selected_year == year, do: "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300", else: "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"}"}>
+              <%= year %>
+            </button>
+          <% end %>
+        </div>
+        
+        <!-- Estadísticas -->
+        <div class="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+          <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Estadísticas</h4>
+          <div class="space-y-2 text-sm text-gray-600 dark:text-gray-400">
+            <div>Total: <%= length(@trucks) %></div>
+            <div>Activos: <%= Enum.count(@trucks, &(&1.status == "active")) %></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Contenido Principal -->
+  <div class="flex-1 flex flex-col overflow-hidden">
+    <!-- Header -->
+    <div class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
+      <div class="px-6 py-4">
+        <div class="flex items-center justify-between">
+          <div>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Flota de Camiones</h1>
+            <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">Gestión y seguimiento de vehículos</p>
+          </div>
+          <div class="flex items-center space-x-3">
+            <!-- Búsqueda -->
+            <div class="relative">
+              <input type="text" phx-keyup="search_trucks" phx-debounce="300" placeholder="Buscar camión..." 
+                     class="w-64 px-4 py-2 pl-10 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white">
+              <svg class="absolute left-3 top-2.5 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+              </svg>
+            </div>
+            
+            <!-- Botón Nuevo Camión -->
+            <button phx-click="show_new_truck_form" 
+                    class="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+              <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+              </svg>
+              Nuevo Camión
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Contenido de la Tabla -->
+    <div class="flex-1 overflow-auto">
+      <div class="px-6 py-4">
+        <!-- Tabla de Camiones -->
+        <div class="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+              <thead class="bg-gray-50 dark:bg-gray-700">
+                <tr>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    <button phx-click="toggle_all_expanded" class="flex items-center space-x-1 hover:text-gray-700 dark:hover:text-gray-200">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                      </svg>
+                      <span>Expandir</span>
+                    </button>
+                  </th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Marca</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Propietario</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Placa</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Ficha</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Acciones</th>
+                </tr>
+              </thead>
+              <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                <%= for truck <- @trucks do %>
+                  <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                    <!-- Botón de expansión -->
+                    <td class="px-6 py-4 whitespace-nowrap">
+                      <button phx-click="toggle_truck_expanded" phx-value-truck_id={truck.id} 
+                              class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
+                        <svg class={"w-5 h-5 transform transition-transform #{if truck.id in @expanded_trucks, do: "rotate-90", else: ""}"} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                        </svg>
+                      </button>
+                    </td>
+                    
+                    <!-- Datos del camión -->
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                      <%= truck.brand %>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                      <%= truck.owner %>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                      <%= truck.license_plate %>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                      <%= truck.ficha || "-" %>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <div class="flex space-x-2">
+                        <button phx-click="view_truck_profile" phx-value-truck_id={truck.id}
+                                class="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
+                                title="Ver perfil">
+                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                          </svg>
+                        </button>
+                        <button phx-click="edit_truck" phx-value-truck_id={truck.id}
+                                class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300"
+                                title="Editar">
+                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                          </svg>
+                        </button>
+                        <button phx-click="delete_truck" phx-value-truck_id={truck.id}
+                                class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                                title="Eliminar"
+                                onclick="return confirm('¿Estás seguro de que quieres eliminar este camión? Esta acción no se puede deshacer.')">
+                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                          </svg>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                  
+                  <!-- Fila expandida con tickets -->
+                  <%= if truck.id in @expanded_trucks do %>
+                    <tr class="bg-gray-50 dark:bg-gray-700">
+                      <td colspan="6" class="px-6 py-4">
+                        <div class="space-y-4">
+                          <h4 class="text-sm font-medium text-gray-900 dark:text-white">Tickets y Órdenes del Camión</h4>
+                          
+                          <!-- Tabla de tickets -->
+                          <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-600">
+                              <thead class="bg-gray-100 dark:bg-gray-600">
+                                <tr>
+                                  <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Tipo</th>
+                                  <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Fecha</th>
+                                  <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Km/Info</th>
+                                  <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Nota</th>
+                                  <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Acciones</th>
+                                </tr>
+                              </thead>
+                              <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-600">
+                                <%= for ticket <- get_truck_tickets(truck.id) do %>
+                                  <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                                    <td class="px-4 py-2 whitespace-nowrap">
+                                      <span class={"inline-flex px-2 py-1 text-xs font-semibold rounded-full #{get_ticket_type_color(ticket.type)}"}>
+                                        <%= get_ticket_type_label(ticket.type) %>
+                                      </span>
+                                    </td>
+                                    <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                                      <%= format_date(ticket.date) %>
+                                    </td>
+                                    <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                                      <%= if ticket.type == "production" do %>
+                                        <span class="text-purple-600 dark:text-purple-400">Orden</span>
+                                      <% else %>
+                                        <%= ticket.mileage || "-" %>
+                                      <% end %>
+                                    </td>
+                                    <td class="px-4 py-2 text-sm text-gray-500 dark:text-gray-300">
+                                      <%= truncate_text(ticket.notes, 50) %>
+                                    </td>
+                                    <td class="px-4 py-2 whitespace-nowrap text-sm font-medium">
+                                      <button phx-click="view_ticket_details" phx-value-ticket_id={ticket.id} phx-value-ticket_type={ticket.type}
+                                              class="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300">
+                                        Más Detalles
+                                      </button>
+                                    </td>
+                                  </tr>
+                                <% end %>
+                                
+                                <%= if Enum.empty?(get_truck_tickets(truck.id)) do %>
+                                  <tr>
+                                    <td colspan="5" class="px-4 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
+                                      No hay tickets de mantenimiento ni órdenes de producción para este camión
+                                    </td>
+                                  </tr>
+                                <% end %>
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  <% end %>
+                <% end %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal para Nuevo/Editar Camión -->
+<%= if @show_truck_form do %>
+  <div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white dark:bg-gray-800">
+      <div class="mt-3">
+        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">
+          <%= if @editing_truck, do: "Editar Camión", else: "Nuevo Camión" %>
+        </h3>
+        <form phx-submit="save_truck">
+          <div class="space-y-4">
+            <div class="relative">
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Marca</label>
+              <input type="text" name="truck[brand]" id="brand-input" value={if is_struct(@editing_truck, Ecto.Changeset), do: Ecto.Changeset.get_field(@editing_truck, :brand), else: if @editing_truck, do: @editing_truck.brand, else: ""} required
+                     class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                     phx-keyup="filter_brands" phx-debounce="300" autocomplete="off">
+              <div id="brand-suggestions" class="absolute z-10 w-full mt-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg max-h-60 overflow-y-auto hidden">
+              </div>
+            </div>
+            <div class="relative">
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Modelo</label>
+              <input type="text" name="truck[model]" id="model-input" value={if is_struct(@editing_truck, Ecto.Changeset), do: Ecto.Changeset.get_field(@editing_truck, :model), else: if @editing_truck, do: @editing_truck.model, else: ""} required
+                     class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                     phx-keyup="filter_models" phx-debounce="300" autocomplete="off">
+              <div id="model-suggestions" class="absolute z-10 w-full mt-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg max-h-60 overflow-y-auto hidden">
+              </div>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Placa</label>
+              <input type="text" name="truck[license_plate]" value={if is_struct(@editing_truck, Ecto.Changeset), do: Ecto.Changeset.get_field(@editing_truck, :license_plate), else: if @editing_truck, do: @editing_truck.license_plate, else: ""} required
+                     class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Número de Chasis/VIN</label>
+              <input type="text" name="truck[chassis_number]" value={if is_struct(@editing_truck, Ecto.Changeset), do: Ecto.Changeset.get_field(@editing_truck, :chassis_number), else: if @editing_truck, do: @editing_truck.chassis_number, else: ""} required
+                     class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                     placeholder="Ingrese el número de chasis o VIN">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Año</label>
+              <input type="number" name="truck[year]" value={if is_struct(@editing_truck, Ecto.Changeset), do: Ecto.Changeset.get_field(@editing_truck, :year), else: if @editing_truck, do: @editing_truck.year, else: ""}
+                     class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white">
+            </div>
+            <div class="relative">
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Propietario</label>
+              <input type="text" name="truck[owner]" id="owner-input" value={if is_struct(@editing_truck, Ecto.Changeset), do: Ecto.Changeset.get_field(@editing_truck, :owner), else: if @editing_truck, do: @editing_truck.owner, else: ""}
+                     class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                     phx-keyup="filter_owners" phx-debounce="300" autocomplete="off">
+              <div id="owner-suggestions" class="absolute z-10 w-full mt-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg max-h-60 overflow-y-auto hidden">
+              </div>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Ficha</label>
+              <input type="text" name="truck[ficha]" value={if is_struct(@editing_truck, Ecto.Changeset), do: Ecto.Changeset.get_field(@editing_truck, :ficha), else: if @editing_truck, do: @editing_truck.ficha, else: ""}
+                     class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white">
+            </div>
+          </div>
+          <div class="flex justify-end space-x-3 mt-6">
+            <button type="button" phx-click="hide_truck_form" 
+                    class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
+              Cancelar
+            </button>
+            <button type="submit" 
+                    class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700">
+              <%= if @editing_truck, do: "Guardar Cambios", else: "Crear Camión" %>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+<% end %>
+
+<script>
+  window.addEventListener("phx:refresh_table", (e) => {
+    // Forzar recarga de la página para mostrar cambios
+    window.location.reload();
+  });
+
+  // Autocompletado para marcas y modelos
+  window.addEventListener("phx:update", (e) => {
+    setupAutocomplete();
+  });
+
+  document.addEventListener("DOMContentLoaded", (e) => {
+    setupAutocomplete();
+  });
+
+  function setupAutocomplete() {
+    const brandInput = document.getElementById('brand-input');
+    const modelInput = document.getElementById('model-input');
+    const ownerInput = document.getElementById('owner-input');
+    const brandSuggestions = document.getElementById('brand-suggestions');
+    const modelSuggestions = document.getElementById('model-suggestions');
+    const ownerSuggestions = document.getElementById('owner-suggestions');
+
+    if (brandInput && brandSuggestions) {
+      setupInputAutocomplete(brandInput, brandSuggestions);
+    }
+
+    if (modelInput && modelSuggestions) {
+      setupInputAutocomplete(modelInput, modelSuggestions);
+    }
+
+    if (ownerInput && ownerSuggestions) {
+      setupInputAutocomplete(ownerInput, ownerSuggestions);
+    }
+  }
+
+  function setupInputAutocomplete(input, suggestionsDiv) {
+    // Evento para ocultar sugerencias al perder focus
+    input.addEventListener('blur', function(e) {
+      // Pequeño delay para permitir que se ejecute el click en las sugerencias
+      setTimeout(() => {
+        suggestionsDiv.classList.add('hidden');
+      }, 200);
+    });
+  }
+
+  // Eventos para actualizar sugerencias desde el servidor
+  window.addEventListener("phx:update_brand_suggestions", (e) => {
+    const suggestionsDiv = document.getElementById('brand-suggestions');
+    const input = document.getElementById('brand-input');
+    updateSuggestions(suggestionsDiv, input, e.detail.suggestions);
+  });
+
+  window.addEventListener("phx:update_model_suggestions", (e) => {
+    const suggestionsDiv = document.getElementById('model-suggestions');
+    const input = document.getElementById('model-input');
+    updateSuggestions(suggestionsDiv, input, e.detail.suggestions);
+  });
+
+  window.addEventListener("phx:update_owner_suggestions", (e) => {
+    const suggestionsDiv = document.getElementById('owner-suggestions');
+    const input = document.getElementById('owner-input');
+    updateSuggestions(suggestionsDiv, input, e.detail.suggestions);
+  });
+
+  function updateSuggestions(suggestionsDiv, input, suggestions) {
+    if (!suggestionsDiv || !input) return;
+
+    if (suggestions.length === 0) {
+      suggestionsDiv.classList.add('hidden');
+      return;
+    }
+
+    // Crear lista de sugerencias
+    const suggestionsList = suggestions.map(suggestion => 
+      `<div class="suggestion-item px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer text-gray-700 dark:text-gray-300" data-value="${suggestion}">${suggestion}</div>`
+    ).join('');
+
+    suggestionsDiv.innerHTML = suggestionsList;
+    suggestionsDiv.classList.remove('hidden');
+
+    // Agregar eventos de click a las sugerencias
+    const suggestionItems = suggestionsDiv.querySelectorAll('.suggestion-item');
+    suggestionItems.forEach(item => {
+      item.addEventListener('click', function() {
+        input.value = this.dataset.value;
+        suggestionsDiv.classList.add('hidden');
+        input.focus();
+      });
+    });
+  }
+</script>

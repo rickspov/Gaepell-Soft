@@ -1,0 +1,186 @@
+<div class="max-w-3xl mx-auto py-8">
+  <h1 class="text-2xl font-bold mb-6 flex items-center gap-2">
+    <svg class="w-7 h-7 text-pink-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8a9 9 0 100-18 9 9 0 000 18zm-3-4h6"/></svg>
+    Feedback / Reporte de Bugs
+  </h1>
+  <button phx-click="new_feedback" class="mb-6 px-4 py-2 bg-pink-600 hover:bg-pink-700 text-white rounded font-bold shadow">Nuevo Feedback</button>
+
+  <div class="space-y-4">
+    <%= for fb <- @feedbacks do %>
+      <div id={"bug-" <> to_string(fb.id)} class="p-4 bg-white dark:bg-gray-800 rounded shadow border border-gray-200 dark:border-gray-700">
+        <div class="flex justify-between items-center">
+          <div>
+            <span class={"inline-block px-2 py-1 rounded text-xs font-bold " <>
+              (case fb.severity do
+                "alta" -> "bg-red-200 text-red-800"
+                "media" -> "bg-yellow-200 text-yellow-800"
+                _ -> "bg-green-200 text-green-800"
+              end)}>
+              <%= String.capitalize(fb.severity) %>
+            </span>
+            <span class="ml-2 text-sm text-gray-700 dark:text-gray-200 font-semibold"><%= fb.reporter %></span>
+            <span class="ml-2 text-xs text-gray-400"><%= Calendar.strftime(fb.inserted_at, "%d/%m/%Y %H:%M") %></span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class={
+              ["px-2 py-1 rounded text-xs font-semibold",
+                case fb.status do
+                  "abierto" -> "bg-green-100 text-green-800"
+                  "en_progreso" -> "bg-yellow-100 text-yellow-800"
+                  "cerrado" -> "bg-gray-200 text-gray-800"
+                  _ -> "bg-gray-100 text-gray-800"
+                end
+              ] |> Enum.join(" ")
+            }>
+              <%= case fb.status do
+                "abierto" -> "Abierto"
+                "en_progreso" -> "En progreso"
+                "cerrado" -> "Cerrado"
+                _ -> humanize(fb.status)
+              end %>
+            </span>
+            <button phx-click="edit_feedback" phx-value-id={fb.id} class="ml-2 px-2 py-1 text-xs bg-blue-100 hover:bg-blue-200 text-blue-800 rounded">Editar</button>
+            <button phx-click="delete_feedback" phx-value-id={fb.id} class="px-2 py-1 text-xs bg-red-100 hover:bg-red-200 text-red-800 rounded">Borrar</button>
+            <form phx-change="change_status" class="inline">
+              <input type="hidden" name="id" value={fb.id} />
+              <select name="status" class="ml-2 text-xs rounded border-gray-300 dark:bg-gray-700 dark:text-white">
+                <option value="abierto" selected={fb.status == "abierto"}>Abierto</option>
+                <option value="en_progreso" selected={fb.status == "en_progreso"}>En progreso</option>
+                <option value="cerrado" selected={fb.status == "cerrado"}>Cerrado</option>
+              </select>
+            </form>
+          </div>
+        </div>
+        <div class="mt-2 text-gray-800 dark:text-gray-100">
+          <%= fb.description %>
+        </div>
+        <div class="mt-2 text-right">
+          <button phx-click="show_details" phx-value-id={fb.id} class="text-xs text-pink-600 underline hover:font-bold">Ver detalles y comentarios</button>
+        </div>
+      </div>
+    <% end %>
+  </div>
+
+  <%= if @show_form do %>
+    <div class="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8 w-full max-w-lg relative">
+        <button phx-click="cancel_feedback" class="absolute top-2 right-2 text-gray-400 hover:text-gray-700 text-2xl">&times;</button>
+        <h2 class="text-xl font-bold mb-4 text-pink-600"><%= if @editing_id, do: "Editar Feedback", else: "Nuevo Feedback / Bug" %></h2>
+        <.form :let={f} for={@changeset} phx-submit="save_feedback">
+          <div class="mb-4">
+            <label class="block text-sm font-medium mb-1">¿Quién reporta?</label>
+            <select name="feedback_report[reporter]" class="w-full rounded border-gray-300 dark:bg-gray-700 dark:text-white">
+              <option value="usuario" selected={input_value(f, :reporter) == "usuario"}>Usuario</option>
+              <option value="programador" selected={input_value(f, :reporter) == "programador"}>Programador</option>
+            </select>
+          </div>
+          <div class="mb-4">
+            <label class="block text-sm font-medium mb-1">Severidad</label>
+            <select name="feedback_report[severity]" class="w-full rounded border-gray-300 dark:bg-gray-700 dark:text-white">
+              <option value="baja" selected={input_value(f, :severity) == "baja"}>Baja</option>
+              <option value="media" selected={input_value(f, :severity) == "media"}>Media</option>
+              <option value="alta" selected={input_value(f, :severity) == "alta"}>Alta</option>
+            </select>
+          </div>
+          <div class="mb-4">
+            <label class="block text-sm font-medium mb-1">Descripción</label>
+            <textarea name="feedback_report[description]" rows="4" class="w-full rounded border-gray-300 dark:bg-gray-700 dark:text-white"><%= input_value(f, :description) %></textarea>
+          </div>
+          <%= if @editing_id do %>
+            <div class="mb-4">
+              <label class="block text-sm font-medium mb-1">Estatus</label>
+              <select name="feedback_report[status]" class="w-full rounded border-gray-300 dark:bg-gray-700 dark:text-white">
+                <option value="abierto" selected={input_value(f, :status) == "abierto"}>Abierto</option>
+                <option value="en_progreso" selected={input_value(f, :status) == "en_progreso"}>En progreso</option>
+                <option value="cerrado" selected={input_value(f, :status) == "cerrado"}>Cerrado</option>
+              </select>
+            </div>
+          <% end %>
+          <div class="mb-4">
+            <label class="block text-sm font-medium mb-1">Imagen de ejemplo (opcional)</label>
+            <.live_file_input upload={@uploads.photo} class="w-full" />
+            <%= for err <- upload_errors(@uploads.photo) do %>
+              <div class="text-xs text-red-600 mt-1">Error: <%= err %></div>
+            <% end %>
+          </div>
+          <div class="flex justify-end gap-2 mt-6">
+            <button type="button" phx-click="cancel_feedback" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded">Cancelar</button>
+            <button type="submit" class="px-6 py-2 bg-pink-600 hover:bg-pink-700 text-white rounded font-bold">Guardar</button>
+          </div>
+        </.form>
+        <%= if @changeset.action do %>
+          <div class="mt-2 text-red-600 text-sm">
+            <%= for {attr, msg} <- @changeset.errors do %>
+              <div><%= humanize(attr) %>: <%= msg %></div>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
+  <%= if @show_details && @details_feedback do %>
+    <div class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 overflow-auto">
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8 w-full max-w-lg relative">
+        <button phx-click="close_details" class="absolute top-2 right-2 text-gray-400 hover:text-gray-700 text-2xl">&times;</button>
+        <h2 class="text-xl font-bold mb-2 text-pink-600">Detalles del Bug / Feedback</h2>
+        <div class="mb-2">
+          <span class={"inline-block px-2 py-1 rounded text-xs font-bold " <>
+            (case @details_feedback.severity do
+              "alta" -> "bg-red-200 text-red-800"
+              "media" -> "bg-yellow-200 text-yellow-800"
+              _ -> "bg-green-200 text-green-800"
+            end)}>
+            <%= String.capitalize(@details_feedback.severity) %>
+          </span>
+          <span class="ml-2 text-sm text-gray-700 dark:text-gray-200 font-semibold"><%= @details_feedback.reporter %></span>
+          <span class="ml-2 text-xs text-gray-400"><%= Calendar.strftime(@details_feedback.inserted_at, "%d/%m/%Y %H:%M") %></span>
+        </div>
+        <div class="mb-2">
+          <span class={"inline-block px-2 py-1 rounded text-xs font-bold " <>
+            (case @details_feedback.status do
+              "cerrado" -> "bg-green-200 text-green-800"
+              "en_progreso" -> "bg-yellow-200 text-yellow-800"
+              _ -> "bg-gray-200 text-gray-800"
+            end)}>
+            <%= String.capitalize(@details_feedback.status) %>
+          </span>
+        </div>
+        <div class="mb-4 text-gray-800 dark:text-gray-100">
+          <%= @details_feedback.description %>
+        </div>
+        <%= if @details_feedback && @details_feedback.photos && @details_feedback.photos != [] do %>
+          <div class="mt-4">
+            <h3 class="text-lg font-bold mb-2 text-pink-600">Imagen adjunta</h3>
+            <div class="flex flex-wrap gap-4">
+              <%= for photo <- @details_feedback.photos do %>
+                <img src={photo} class="max-h-48 rounded border" />
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+        <div class="mt-4">
+          <h3 class="text-lg font-bold mb-2 text-pink-600">Comentarios</h3>
+          <%= for c <- @comments do %>
+            <div class="mb-2 p-2 bg-gray-100 dark:bg-gray-700 rounded">
+              <span class="font-semibold"><%= c.author %>:</span> <%= c.body %>
+              <span class="ml-2 text-xs text-gray-400"><%= Calendar.strftime(c.inserted_at, "%d/%m/%Y %H:%M") %></span>
+            </div>
+          <% end %>
+          <.form :let={f} for={@comment_changeset} phx-submit="add_comment">
+            <div class="flex gap-2 mt-2">
+              <input name="feedback_comment[body]" class="flex-1 rounded border-gray-300 dark:bg-gray-700 dark:text-white" placeholder="Agregar comentario..." />
+              <button type="submit" class="px-4 py-2 bg-pink-600 hover:bg-pink-700 text-white rounded">Comentar</button>
+            </div>
+          </.form>
+        </div>
+        <%= if @comment_changeset && @comment_changeset.action do %>
+          <div class="mt-2 text-red-600 text-xs">
+            <%= for {attr, msg} <- @comment_changeset.errors do %>
+              <div><%= humanize(attr) %>: <%= msg %></div>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
+</div> 

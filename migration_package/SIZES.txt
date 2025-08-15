@@ -1,0 +1,21 @@
+INFORMACIÓN DE TAMAÑOS:
+======================
+
+8.0K	MIGRATION_GUIDE.md
+4.0K	PACKAGE_INFO.txt
+4.0K	README.md
+4.0K	SIZES.txt
+324K	checksums.sha256
+4.0K	create_backup.sh
+  0B	database_backup.sql
+  0B	database_backup_20250811_065629.sql
+140K	database_backup_20250811_065649.sql
+4.0K	environment_vars.env
+ 88M	evaa_crm_gaepell
+ 12K	hostgator_setup.sh
+8.0K	nginx_config.conf
+8.0K	package_for_deployment.sh
+4.0K	systemd_service.conf
+
+TOTAL DEL PAQUETE:
+ 89M	.

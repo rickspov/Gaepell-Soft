@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en" class="[scrollbar-gutter:stable]" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+    <meta name="csrf-token" content={get_csrf_token()} />
+    <meta name="theme-color" content="#3b82f6"/>
+    <meta name="apple-mobile-web-app-capable" content="yes"/>
+    <meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+    <meta name="apple-mobile-web-app-title" content="EVA CRM"/>
+    <.live_title default="EvaCRM" suffix=" · Eficiencia Virtual Asistida">
+      {assigns[:page_title]}
+    </.live_title>
+    <link rel="manifest" href="/manifest.json"/>
+    <link rel="apple-touch-icon" href="/images/icon-192x192.png"/>
+    <link phx-track-static rel="stylesheet" href={~p"/assets/app.css"} />
+    <script defer phx-track-static type="text/javascript" src={~p"/assets/app.js"}>
+    </script>
+    <script defer phx-track-static type="text/javascript" src={~p"/assets/pwa.js"}>
+    </script>
+    <script defer phx-track-static type="text/javascript" src={~p"/assets/offline-sync.js"}>
+    </script>
+    <link rel="icon" type="image/png" href={~p"/images/logoeva2.png"} />
+    <script>
+      // Register Service Worker for PWA
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function() {
+          navigator.serviceWorker.register('/sw.js')
+            .then(function(registration) {
+              console.log('SW registered: ', registration);
+            })
+            .catch(function(registrationError) {
+              console.log('SW registration failed: ', registrationError);
+            });
+        });
+      }
+    </script>
+    <script>
+      // Theme toggle functionality for Tailwind dark mode
+      (function() {
+        const html = document.documentElement;
+        
+        // Load saved theme from localStorage
+        const savedTheme = localStorage.getItem('theme');
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        
+        // Set initial theme
+        if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+          html.classList.add('dark');
+          html.setAttribute('data-theme', 'dark');
+        } else {
+          html.classList.remove('dark');
+          html.setAttribute('data-theme', 'light');
+        }
+        
+        // Theme toggle click handler
+        function toggleTheme(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          
+          const isDark = html.classList.contains('dark');
+          
+          if (isDark) {
+            html.classList.remove('dark');
+            html.setAttribute('data-theme', 'light');
+            localStorage.setItem('theme', 'light');
+          } else {
+            html.classList.add('dark');
+            html.setAttribute('data-theme', 'dark');
+            localStorage.setItem('theme', 'dark');
+          }
+          
+          updateIcons(!isDark);
+        }
+        
+        // Update toggle button icons based on current theme
+        function updateIcons(isDark) {
+          document.querySelectorAll('.theme-toggle').forEach(toggle => {
+            const sunIcon = toggle.querySelector('.sun-icon');
+            const moonIcon = toggle.querySelector('.moon-icon');
+            if (sunIcon && moonIcon) {
+              if (isDark) {
+                sunIcon.style.display = 'none';
+                moonIcon.style.display = 'block';
+              } else {
+                sunIcon.style.display = 'block';
+                moonIcon.style.display = 'none';
+              }
+            }
+          });
+        }
+        
+        // Add click event when DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+          // Remove any existing event listeners
+          document.querySelectorAll('.theme-toggle').forEach(toggle => {
+            toggle.removeEventListener('click', toggleTheme);
+            toggle.addEventListener('click', toggleTheme);
+          });
+          
+          // Initial icon update
+          updateIcons(html.classList.contains('dark'));
+        });
+        
+        // Also add event listeners immediately for faster response
+        document.querySelectorAll('.theme-toggle').forEach(toggle => {
+          toggle.removeEventListener('click', toggleTheme);
+          toggle.addEventListener('click', toggleTheme);
+        });
+        
+        // Watch for theme changes
+        const observer = new MutationObserver(function(mutations) {
+          mutations.forEach(function(mutation) {
+            if (mutation.type === 'attributes' && 
+                (mutation.attributeName === 'data-theme' || mutation.attributeName === 'class')) {
+              updateIcons(html.classList.contains('dark'));
+            }
+          });
+        });
+        
+        observer.observe(html, {
+          attributes: true,
+          attributeFilter: ['data-theme', 'class']
+        });
+      })();
+    </script>
+  </head>
+  <body class="bg-[#181c23] text-white">
+    <main class="min-h-screen">
+      <%= @inner_content %>
+    </main>
+  </body>
+</html>

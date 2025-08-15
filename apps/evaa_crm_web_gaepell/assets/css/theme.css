@@ -1,0 +1,95 @@
+/* Light theme (default) */
+:root {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8fafc;
+  --text-primary: #1f2937;
+  --text-secondary: #6b7280;
+  --border-color: #e5e7eb;
+  --accent-color: #3b82f6;
+  --accent-hover: #2563eb;
+  --card-bg: #ffffff;
+  --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  --sidebar-bg: #ffffff;
+  --sidebar-border: #e5e7eb;
+  --nav-hover: #f3f4f6;
+  --nav-active: #dbeafe;
+}
+
+/* Dark theme */
+[data-theme="dark"] {
+  --bg-primary: #111827;
+  --bg-secondary: #1f2937;
+  --text-primary: #f9fafb;
+  --text-secondary: #d1d5db;
+  --border-color: #374151;
+  --accent-color: #60a5fa;
+  --accent-hover: #3b82f6;
+  --card-bg: #1f2937;
+  --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.3), 0 1px 2px 0 rgba(0, 0, 0, 0.2);
+  --sidebar-bg: #1f2937;
+  --sidebar-border: #374151;
+  --nav-hover: #374151;
+  --nav-active: #1e3a8a;
+}
+
+/* Sidebar Navigation Styles */
+.nav-item {
+  @apply w-10 h-10 rounded-lg flex items-center justify-center text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200;
+}
+
+.nav-item.active {
+  @apply bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400;
+}
+
+.nav-item:hover {
+  @apply transform scale-105;
+}
+
+/* Main content area */
+.main-content {
+  background-color: var(--bg-secondary);
+}
+
+/* Apply theme variables to existing classes */
+.bg-white {
+  background-color: var(--card-bg);
+}
+
+.dark\:bg-gray-800 {
+  background-color: var(--card-bg);
+}
+
+.text-gray-900 {
+  color: var(--text-primary);
+}
+
+.dark\:text-white {
+  color: var(--text-primary);
+}
+
+.text-gray-500 {
+  color: var(--text-secondary);
+}
+
+.dark\:text-gray-400 {
+  color: var(--text-secondary);
+}
+
+.border-gray-200 {
+  border-color: var(--border-color);
+}
+
+.dark\:border-gray-700 {
+  border-color: var(--border-color);
+}
+
+/* Sidebar specific styles */
+.sidebar {
+  background-color: var(--sidebar-bg);
+  border-color: var(--sidebar-border);
+}
+
+/* Remove old theme toggle styles */
+.theme-toggle {
+  /* Styles moved to nav-item class */
+} 

@@ -1,0 +1,61 @@
+PAQUETE DE MIGRACIÓN EVAA_CRM_GAEPELL
+=====================================
+
+Fecha de Creación: Mon Aug 11 06:59:10 AST 2025
+Versión del Sistema: EvaaCRM Gaepell v0.1.0
+Entorno Origen: Desarrollo Local
+Entorno Destino: HostGator
+Subdominio Objetivo: crm.tudominio.com
+
+ARCHIVOS INCLUIDOS:
+==================
+
+Documentación:
+- MIGRATION_GUIDE.md: Guía completa de migración
+- README.md: Información del paquete
+- PACKAGE_INFO.txt: Este archivo
+
+Scripts de Configuración:
+- hostgator_setup.sh: Configuración automática para HostGator
+- create_backup.sh: Script para crear backups de BD
+
+Configuraciones del Sistema:
+- nginx_config.conf: Configuración de Nginx optimizada
+- systemd_service.conf: Configuración del servicio del sistema
+- environment_vars.env: Variables de entorno de ejemplo
+
+Aplicación y Datos:
+- evaa_crm_gaepell/: Release compilado de la aplicación
+- database_backup.sql: Backup de la base de datos actual
+
+Verificación:
+- checksums.sha256: Checksums de todos los archivos
+
+INSTRUCCIONES RÁPIDAS:
+=====================
+
+1. Subir todo el contenido de este directorio a HostGator
+2. Ejecutar: chmod +x hostgator_setup.sh
+3. Ejecutar: ./hostgator_setup.sh
+4. Configurar subdominio 'crm' en el panel de HostGator
+5. Probar en: http://crm.tudominio.com
+
+VERIFICACIÓN DE INTEGRIDAD:
+==========================
+
+Para verificar que no se corrompieron los archivos durante la transferencia:
+
+cd /ruta/a/migration_package
+sha256sum -c checksums.sha256
+
+Todos los archivos deben mostrar "OK".
+
+CONTACTO Y SOPORTE:
+===================
+
+Si tienes problemas durante la migración:
+1. Revisar logs: sudo journalctl -u evaa_crm_gaepell -f
+2. Verificar estado: sudo systemctl status evaa_crm_gaepell
+3. Contactar al equipo de desarrollo con los logs de error
+
+¡BUENA SUERTE CON LA MIGRACIÓN!

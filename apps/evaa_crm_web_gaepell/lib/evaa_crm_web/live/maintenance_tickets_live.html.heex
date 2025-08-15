@@ -1,0 +1,651 @@
+<div class="max-w-7xl mx-auto">
+  <div class="mb-8">
+    <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Tickets de Mantenimiento</h1>
+    <p class="mt-2 text-gray-600 dark:text-gray-400">Gestiona los tickets de entrada y salida de camiones</p>
+  </div>
+
+  <!-- Search and Filters -->
+  <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-6 mb-6">
+    <div class="flex flex-col md:flex-row gap-4">
+      <div class="flex-1">
+        <form phx-submit="search" class="flex">
+          <input type="text" name="search" value={@search} placeholder="Buscar por camión..." 
+                 class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-l-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white">
+          <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-r-lg hover:bg-blue-700">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+            </svg>
+          </button>
+        </form>
+      </div>
+      <div class="flex gap-2">
+        <form phx-change="filter_status" class="inline">
+          <select name="status" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white">
+            <option value="all">Todos los estados</option>
+            <option value="check_in">Check In</option>
+            <option value="in_workshop">En Taller/Reparación</option>
+            <option value="final_review">Revisión Final</option>
+            <option value="car_wash">Car Wash</option>
+            <option value="check_out">Check Out</option>
+            <option value="cancelled">Cancelado</option>
+          </select>
+        </form>
+        <form phx-change="filter_truck" class="inline">
+          <select name="truck_id" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white">
+            <option value="all">Todos los camiones</option>
+            <%= for truck <- @trucks do %>
+              <option value={truck.id}><%= truck.brand %> <%= truck.model %> (<%= truck.license_plate %>)</option>
+            <% end %>
+          </select>
+        </form>
+        <a href="/checkin" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+          </svg>
+          Nuevo Ticket
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tickets Table -->
+  <div class="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+        <thead class="bg-gray-50 dark:bg-gray-700">
+          <tr>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">ID</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Camión</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Fecha Ingreso</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Estado</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Kilometraje</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Combustible</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Fotos</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Acciones</th>
+          </tr>
+        </thead>
+        <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+          <%= for ticket <- @tickets do %>
+            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                #<%= ticket.id %>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                <div>
+                  <button phx-click="show_ticket_profile" phx-value-ticket_id={ticket.id} 
+                          class="font-medium text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 text-left">
+                    <%= ticket.truck.brand %> <%= ticket.truck.model %>
+                  </button>
+                  <div class="text-xs text-gray-500 dark:text-gray-400"><%= ticket.truck.license_plate %></div>
+                </div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                <%= if ticket.entry_date do %>
+                  <%= Calendar.strftime(ticket.entry_date, "%d/%m/%Y %H:%M") %>
+                <% end %>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <%= if @editing_status_id == ticket.id do %>
+                  <form phx-change="update_status" class="inline">
+                    <input type="hidden" name="id" value={ticket.id} />
+                    <select name="status" class="px-2 py-1 text-xs rounded-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:ring-2 focus:ring-blue-500">
+                      <option value="check_in" selected={ticket.status == "check_in"}>Check In</option>
+                      <option value="in_workshop" selected={ticket.status == "in_workshop"}>En Taller/Reparación</option>
+                      <option value="final_review" selected={ticket.status == "final_review"}>Revisión Final</option>
+                      <option value="car_wash" selected={ticket.status == "car_wash"}>Car Wash</option>
+                      <option value="check_out" selected={ticket.status == "check_out"}>Check Out</option>
+                      <option value="cancelled" selected={ticket.status == "cancelled"}>Cancelado</option>
+                    </select>
+                  </form>
+                <% else %>
+                  <span class={"px-2 py-1 text-xs font-semibold rounded-full cursor-pointer transition-all " <> status_color(ticket.status)} phx-click="edit_status" phx-value-id={ticket.id} title="Editar estado">
+                    <%= case ticket.status do
+                      "check_in" -> "Check In"
+                      "in_workshop" -> "En Taller/Reparación"
+                      "final_review" -> "Revisión Final"
+                      "car_wash" -> "Car Wash"
+                      "check_out" -> "Check Out"
+                      "cancelled" -> "Cancelado"
+                      _ -> ticket.status
+                    end %>
+                  </span>
+                <% end %>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                <%= if ticket.mileage, do: "#{ticket.mileage} km" %>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                <%= ticket.fuel_level %>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                <%= if ticket.damage_photos && length(ticket.damage_photos) > 0 do %>
+                  <div class="flex gap-1">
+                    <%= for photo_url <- Enum.take(ticket.damage_photos, 3) do %>
+                      <img src={photo_url} alt="Foto del daño" class="w-8 h-8 object-cover rounded border border-gray-300 dark:border-gray-700" />
+                    <% end %>
+                    <%= if length(ticket.damage_photos) > 3 do %>
+                      <div class="w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded flex items-center justify-center text-xs text-gray-600 dark:text-gray-400">
+                        +<%= length(ticket.damage_photos) - 3 %>
+                      </div>
+                    <% end %>
+                  </div>
+                <% else %>
+                  <span class="text-gray-400 dark:text-gray-500 text-xs">Sin fotos</span>
+                <% end %>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                <div class="flex space-x-2">
+                  <a href={"/trucks/#{ticket.truck_id}"} 
+                     class="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
+                     title="Ver perfil del camión">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18.75a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 0 1-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 0 0-3.213-9.193 2.056 2.056 0 0 0-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 0 0-10.026 0 1.106 1.106 0 0 0-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12"/>
+                    </svg>
+                  </a>
+                  <a href={"/logs/maintenance_ticket/#{ticket.id}"} 
+                     class="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300"
+                     title="Ver historial de actividad">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                  </a>
+                  <button phx-click="show_form" phx-value-ticket_id={ticket.id} 
+                          class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300"
+                          title="Editar ticket">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10"/>
+                    </svg>
+                  </button>
+                  <button phx-click="show_delete_confirm" phx-value-id={ticket.id} 
+                          class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                          title="Eliminar ticket">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0"></path>
+                    </svg>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    <%= if @total_pages > 1 do %>
+      <div class="bg-white dark:bg-gray-800 px-4 py-3 flex items-center justify-between border-t border-gray-200 dark:border-gray-700 sm:px-6">
+        <div class="flex-1 flex justify-between sm:hidden">
+          <%= if @page > 1 do %>
+            <button phx-click="paginate" phx-value-page={@page - 1} 
+                    class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+              Anterior
+            </button>
+          <% end %>
+          <%= if @page < @total_pages do %>
+            <button phx-click="paginate" phx-value-page={@page + 1} 
+                    class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+              Siguiente
+            </button>
+          <% end %>
+        </div>
+        <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+          <div>
+            <p class="text-sm text-gray-700 dark:text-gray-300">
+              Mostrando <span class="font-medium"><%= (@page - 1) * @per_page + 1 %></span> a 
+              <span class="font-medium"><%= min(@page * @per_page, @total) %></span> de 
+              <span class="font-medium"><%= @total %></span> resultados
+            </p>
+          </div>
+          <div>
+            <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
+              <%= for page <- 1..@total_pages do %>
+                <button phx-click="paginate" phx-value-page={page} 
+                        class={"relative inline-flex items-center px-4 py-2 border text-sm font-medium #{if page == @page, do: "z-10 bg-blue-50 border-blue-500 text-blue-600", else: "bg-white border-gray-300 text-gray-500 hover:bg-gray-50"}"}>
+                  <%= page %>
+                </button>
+              <% end %>
+            </nav>
+          </div>
+        </div>
+      </div>
+    <% end %>
+  </div>
+
+  <!-- Form Modal -->
+  <%= if @show_form do %>
+    <div class="fixed inset-0 bg-black/70 dark:bg-black/80 flex items-center justify-center z-50" phx-click="hide_form" phx-window-keydown="hide_form" phx-key="escape" phx-capture-click>
+      <div class="bg-white dark:bg-[#23272f] rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col border border-gray-200 dark:border-[#2d323c] relative overflow-y-auto" phx-click="ignore">
+        <div class="flex items-center gap-3 p-5 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-orange-100/60 via-white/80 to-blue-100/60 dark:from-orange-900/20 dark:via-[#23272f] dark:to-blue-900/20 rounded-t-2xl">
+          <span class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-orange-500/90 text-white shadow-lg">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536M9 13h3l6 6M3 21l6-6m0 0V9a3 3 0 013-3h3m-6 6l-6 6"/></svg>
+          </span>
+          <div>
+            <h3 class="text-xl font-bold text-gray-900 dark:text-gray-100 leading-tight"> 
+              <%= if @editing_ticket && @editing_ticket.data && !is_nil(@editing_ticket.data.id) do %>
+                Editar Ticket #<%= @editing_ticket.data.id %>
+              <% else %>
+                Nuevo Ticket de Mantenimiento
+              <% end %>
+            </h3>
+            <p class="text-xs text-gray-500 dark:text-gray-400">Completa la información del ticket</p>
+          </div>
+          <button phx-click="hide_form" class="ml-auto text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 text-2xl font-bold">&times;</button>
+        </div>
+        <.form :let={f} for={@editing_ticket} phx-submit="save_ticket" phx-change="validate" class="flex-1 flex flex-col min-h-0 px-6 py-4 gap-4">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Camión</label>
+              <select name="maintenance_ticket[truck_id]" required autofocus class="mt-1 block w-full px-2 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm dark:bg-gray-700 dark:text-white" phx-change="truck_select_change">
+                <option value="">Seleccionar camión</option>
+                <%= for truck <- @trucks do %>
+                  <option value={to_string(truck.id)} selected={to_string(input_value(f, :truck_id)) == to_string(truck.id)}>
+                    <%= truck.brand %> <%= truck.model %> (<%= truck.license_plate %>)
+                  </option>
+                <% end %>
+                <option value="__new__" selected={input_value(f, :truck_id) == "__new__"}>➕ Crear nuevo camión</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Fecha de Ingreso</label>
+              <.input field={f[:entry_date]} type="datetime-local" required class="w-full text-sm" input_class="px-2 py-2" />
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Kilometraje</label>
+              <.input field={f[:mileage]} type="number" class="w-full text-sm" input_class="px-2 py-2" />
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Nivel de Combustible</label>
+              <select name="maintenance_ticket[fuel_level]" class="mt-1 block w-full px-2 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm dark:bg-gray-700 dark:text-white">
+                <option value="">Seleccionar nivel</option>
+                <option value="empty" selected={input_value(f, :fuel_level) == "empty"}>Vacío</option>
+                <option value="quarter" selected={input_value(f, :fuel_level) == "quarter"}>1/4</option>
+                <option value="half" selected={input_value(f, :fuel_level) == "half"}>1/2</option>
+                <option value="three_quarters" selected={input_value(f, :fuel_level) == "three_quarters"}>3/4</option>
+                <option value="full" selected={input_value(f, :fuel_level) == "full"}>Lleno</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Estado</label>
+              <select name="maintenance_ticket[status]" required class="mt-1 block w-full px-2 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm dark:bg-gray-700 dark:text-white">
+                <option value="check_in" selected={input_value(f, :status) == "check_in"}>Check In</option>
+                <option value="in_workshop" selected={input_value(f, :status) == "in_workshop"}>En Taller/Reparación</option>
+                <option value="final_review" selected={input_value(f, :status) == "final_review"}>Revisión Final</option>
+                <option value="car_wash" selected={input_value(f, :status) == "car_wash"}>Car Wash</option>
+                <option value="check_out" selected={input_value(f, :status) == "check_out"}>Check Out</option>
+                <option value="cancelled" selected={input_value(f, :status) == "cancelled"}>Cancelado</option>
+              </select>
+            </div>
+          </div>
+
+          <%= if input_value(f, :truck_id) == "__new__" do %>
+            <div class="w-full mt-4 mb-4 p-4 border-2 border-blue-400 rounded-xl bg-blue-50 dark:bg-blue-900/20">
+              <h4 class="text-base font-bold text-blue-700 dark:text-blue-200 mb-4 flex items-center">
+                <svg class="w-5 h-5 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                Crear Nuevo Camión
+              </h4>
+              <form phx-submit="create_embedded_truck" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="relative">
+                  <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Marca *</label>
+                  <input type="text" name="embedded_truck[brand]" id="embedded-brand-input" required class="w-full px-2 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white" phx-keyup="filter_brands" phx-debounce="300" autocomplete="off" />
+                  <div id="embedded-brand-suggestions" class="absolute z-10 w-full mt-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg max-h-60 overflow-y-auto hidden">
+                  </div>
+                </div>
+                <div class="relative">
+                  <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Modelo *</label>
+                  <input type="text" name="embedded_truck[model]" id="embedded-model-input" required class="w-full px-2 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white" phx-keyup="filter_models" phx-debounce="300" autocomplete="off" />
+                  <div id="embedded-model-suggestions" class="absolute z-10 w-full mt-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg max-h-60 overflow-y-auto hidden">
+                  </div>
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Placa *</label>
+                  <input type="text" name="embedded_truck[license_plate]" required class="w-full px-2 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Número de Chasis/VIN *</label>
+                  <input type="text" name="embedded_truck[chassis_number]" required class="w-full px-2 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white" placeholder="Ingrese el número de chasis o VIN" />
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Año</label>
+                  <input type="number" name="embedded_truck[year]" min="1900" max="2030" class="w-full px-2 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
+                </div>
+                <div class="relative">
+                  <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Propietario</label>
+                  <input type="text" name="embedded_truck[owner]" id="embedded-owner-input" class="w-full px-2 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white" phx-keyup="filter_owners" phx-debounce="300" autocomplete="off" />
+                  <div id="embedded-owner-suggestions" class="absolute z-10 w-full mt-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg max-h-60 overflow-y-auto hidden">
+                  </div>
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Ficha</label>
+                  <input type="text" name="embedded_truck[ficha]" class="w-full px-2 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
+                </div>
+                <div class="md:col-span-2">
+                  <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Notas generales</label>
+                  <textarea name="embedded_truck[general_notes]" rows="2" class="w-full px-2 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"></textarea>
+                </div>
+                <div class="md:col-span-2 flex justify-end mt-2">
+                  <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700">Guardar camión y usar</button>
+                </div>
+              </form>
+            </div>
+          <% end %>
+
+          <div>
+            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Título</label>
+            <.input field={f[:title]} type="text" required class="w-full text-sm" input_class="px-2 py-2" />
+          </div>
+          <input type="hidden" name="maintenance_ticket[business_id]" value={@current_user.business_id} />
+          <div>
+            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Daños Visibles</label>
+            <.input field={f[:visible_damage]} type="textarea" rows="2" class="w-full text-sm" input_class="px-2 py-2" />
+          </div>
+          <div>
+              <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Notas de Entrada</label>
+            <.input field={f[:exit_notes]} type="textarea" rows="2" class="w-full text-sm" input_class="px-2 py-2" />
+          </div>
+          <div class="flex items-center gap-4 mt-2">
+            <div>
+              <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Color del Evento</label>
+              <input type="color" name="maintenance_ticket[color]" value={input_value(f, :color) || "#2563eb"} class="w-8 h-8 p-0 border-0 bg-transparent cursor-pointer align-middle rounded-full shadow" />
+            </div>
+          </div>
+            
+            <!-- Deliverer Information Section -->
+            <div class="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
+              <h4 class="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3 flex items-center">
+                <svg class="w-4 h-4 mr-2 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+                </svg>
+                Información del Entregador (Protección Legal)
+              </h4>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Nombre del Entregador *</label>
+                  <.input field={f[:deliverer_name]} type="text" required class="w-full text-sm" input_class="px-2 py-2" />
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Tipo de Documento *</label>
+                  <select name="maintenance_ticket[document_type]" required class="mt-1 block w-full px-2 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent text-sm dark:bg-gray-700 dark:text-white">
+                    <option value="">Seleccionar tipo</option>
+                    <option value="dni" selected={input_value(f, :document_type) == "dni"}>DNI</option>
+                    <option value="ce" selected={input_value(f, :document_type) == "ce"}>Carné de Extranjería</option>
+                    <option value="passport" selected={input_value(f, :document_type) == "passport"}>Pasaporte</option>
+                    <option value="ruc" selected={input_value(f, :document_type) == "ruc"}>RUC</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Número de Documento *</label>
+                  <.input field={f[:document_number]} type="text" required class="w-full text-sm" input_class="px-2 py-2" />
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Teléfono *</label>
+                  <.input field={f[:deliverer_phone]} type="tel" required class="w-full text-sm" input_class="px-2 py-2" />
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
+                  <.input field={f[:deliverer_email]} type="email" class="w-full text-sm" input_class="px-2 py-2" />
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Dirección</label>
+                  <.input field={f[:deliverer_address]} type="text" class="w-full text-sm" input_class="px-2 py-2" />
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Empresa</label>
+                  <.input field={f[:company_name]} type="text" class="w-full text-sm" input_class="px-2 py-2" />
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Cargo</label>
+                  <.input field={f[:position]} type="text" class="w-full text-sm" input_class="px-2 py-2" />
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Número de Empleado</label>
+                  <.input field={f[:employee_number]} type="text" class="w-full text-sm" input_class="px-2 py-2" />
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Tipo de Autorización *</label>
+                  <select name="maintenance_ticket[authorization_type]" required class="mt-1 block w-full px-2 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent text-sm dark:bg-gray-700 dark:text-white">
+                    <option value="">Seleccionar tipo</option>
+                    <option value="propietario" selected={input_value(f, :authorization_type) == "propietario"}>Propietario</option>
+                    <option value="conductor" selected={input_value(f, :authorization_type) == "conductor"}>Conductor Asignado</option>
+                    <option value="representante" selected={input_value(f, :authorization_type) == "representante"}>Representante Legal</option>
+                    <option value="otro" selected={input_value(f, :authorization_type) == "otro"}>Otro</option>
+                  </select>
+                </div>
+              </div>
+              <div class="mt-4">
+                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Condiciones Especiales</label>
+                <.input field={f[:special_conditions]} type="textarea" rows="2" class="w-full text-sm" input_class="px-2 py-2" placeholder="Condiciones especiales, restricciones, etc." />
+              </div>
+            </div>
+            <%= if @editing_ticket && @editing_ticket.errors && length(@editing_ticket.errors) > 0 do %>
+            <div class="text-sm text-red-500 mt-2 font-semibold border-l-4 border-red-400 pl-3 bg-red-50 dark:bg-red-900/20 py-2 rounded">
+                <%= for {attr, {msg, _opts}} <- @editing_ticket.errors do %>
+                <div><%= humanize(attr) %>: <%= msg %></div>
+              <% end %>
+            </div>
+          <% end %>
+          <!-- Photo Upload Section -->
+          <div id="file-upload-preview" phx-hook="FileUploadPreview">
+            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Fotos del Camión (múltiples)</label>
+            <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
+              <svg class="mx-auto h-8 w-8 text-gray-400 mb-2" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+              <label class="relative cursor-pointer bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium transition-colors">
+                <span>Subir fotos</span>
+                <.live_file_input upload={@uploads.damage_photos} class="hidden" />
+              </label>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">PNG, JPG, GIF hasta 10MB (máximo 10 fotos)</p>
+              <div class="upload-preview-container mt-2">
+                <%= if Enum.empty?(@uploads.damage_photos.entries) do %>
+                  <div class="text-xs text-gray-400 mt-2">No hay archivos seleccionados.</div>
+                <% else %>
+                  <div class="text-xs text-gray-700 dark:text-gray-300 mt-2 font-semibold">Archivos listos para subir:</div>
+                  <%= for entry <- @uploads.damage_photos.entries do %>
+                    <div class="mt-2 flex items-center gap-2">
+                      <img
+                        phx-upload-preview={entry.ref}
+                        class="w-16 h-16 object-cover rounded border border-gray-300 dark:border-gray-700"
+                        alt="Preview"
+                      />
+                      <div class="flex-1">
+                        <span class="text-xs text-gray-700 dark:text-gray-300"><%= entry.client_name %></span>
+                        <%= if entry.progress < 100 do %>
+                          <div class="w-full bg-gray-200 rounded-full h-1 mt-1">
+                            <div class="bg-blue-600 h-1 rounded-full" style={"width: #{entry.progress}%"}>
+                            </div>
+                          </div>
+                          <span class="text-xs text-gray-500">Subiendo... <%= entry.progress %>%</span>
+                        <% else %>
+                          <span class="text-xs text-green-600">✓ Completado</span>
+                        <% end %>
+                      </div>
+                      <button type="button" phx-click="cancel-upload" phx-value-ref={entry.ref} class="text-red-500 text-xs ml-2">Eliminar</button>
+                    </div>
+                  <% end %>
+                <% end %>
+              </div>
+            </div>
+          </div>
+          <!-- Existing Photos Section -->
+            <%= if @editing_ticket && @editing_ticket.data && @editing_ticket.data.damage_photos && length(@editing_ticket.data.damage_photos) > 0 do %>
+            <div class="mt-4">
+              <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">Fotos Existentes</label>
+              <div class="grid grid-cols-2 md:grid-cols-3 gap-2">
+                  <%= for photo_url <- @editing_ticket.data.damage_photos do %>
+                  <div class="relative group">
+                    <img 
+                      src={photo_url} 
+                      class="w-full h-24 object-cover rounded border border-gray-300 dark:border-gray-700"
+                      alt="Foto del camión"
+                    />
+                    <div class="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity rounded flex items-center justify-center">
+                      <button 
+                        type="button" 
+                        phx-click="remove_photo" 
+                        phx-value-url={photo_url}
+                        class="text-white text-xs bg-red-500 hover:bg-red-600 px-2 py-1 rounded"
+                      >
+                        Eliminar
+                      </button>
+                    </div>
+                  </div>
+                <% end %>
+              </div>
+            </div>
+          <% end %>
+          <div class="flex justify-end gap-4 pt-4 border-t border-gray-200 dark:border-gray-700 mt-2">
+            <button type="button" phx-click="hide_form" class="px-4 py-2 text-base font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-all">Cancelar</button>
+            <button type="submit" class="px-6 py-2 text-base font-bold text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all disabled:opacity-60 disabled:cursor-not-allowed">Guardar</button>
+          </div>
+        </.form>
+      </div>
+    </div>
+  <% end %>
+
+  <!-- Delete Confirmation Modal -->
+  <%= if @show_delete_confirm do %>
+    <div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+      <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white dark:bg-gray-800">
+        <div class="mt-3 text-center">
+          <h3 class="text-lg font-medium text-gray-900 dark:text-white">Confirmar Eliminación</h3>
+          <div class="mt-2 px-7 py-3">
+            <p class="text-sm text-gray-500 dark:text-gray-400">
+              ¿Estás seguro de que quieres eliminar <strong><%= @delete_target.name %></strong>?
+            </p>
+          </div>
+          <div class="flex justify-center space-x-3">
+            <button phx-click="hide_delete_confirm" 
+                    class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
+              Cancelar
+            </button>
+            <button phx-click="confirm_delete" 
+                    class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700">
+              Eliminar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  <% end %>
+</div>
+
+  <%= if @show_form && @editing_ticket && @editing_ticket.data && @editing_ticket.data.id do %>
+  <div class="mt-8 bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
+    <h3 class="text-lg font-semibold mb-2 text-gray-800 dark:text-gray-200">Historial de Cambios</h3>
+    <%= if @ticket_changelog && length(@ticket_changelog) > 0 do %>
+      <ul class="divide-y divide-gray-200 dark:divide-gray-700">
+        <%= for log <- @ticket_changelog do %>
+          <li class="py-2 text-sm text-gray-700 dark:text-gray-300">
+              <span class="font-semibold"><%= log.user && log.user.email || "(usuario desconocido)" %></span>
+              <%= if log.action == "created" do %>
+                creó ticket de mantenimiento '<%= log.description %>'
+              <% else %>
+            cambió <span class="font-semibold"><%= log.field %></span>
+            de <span class="text-red-600 dark:text-red-400"><%= log.old_value %></span>
+            a <span class="text-green-600 dark:text-green-400"><%= log.new_value %></span>
+              <% end %>
+            <span class="text-xs text-gray-500 ml-2">(<%= Calendar.strftime(log.inserted_at, "%d/%m/%Y %H:%M") %>)</span>
+          </li>
+        <% end %>
+      </ul>
+    <% else %>
+      <div class="text-xs text-gray-500">Sin cambios registrados.</div>
+    <% end %>
+  </div>
+<% end %>
+
+  <!-- Ticket Profile Modal -->
+  <.ticket_profile_modal 
+    show_ticket_profile={@show_ticket_profile}
+    selected_ticket={@selected_ticket}
+    ticket_logs={@ticket_logs}
+      ticket_checkouts={@ticket_checkouts}
+  />
+
+<script>
+  // Autocompletado para marcas, modelos y propietarios en maintenance tickets
+  window.addEventListener("phx:update", (e) => {
+    setupMaintenanceAutocomplete();
+  });
+
+  document.addEventListener("DOMContentLoaded", (e) => {
+    setupMaintenanceAutocomplete();
+  });
+
+  function setupMaintenanceAutocomplete() {
+    const brandInput = document.getElementById('embedded-brand-input');
+    const modelInput = document.getElementById('embedded-model-input');
+    const ownerInput = document.getElementById('embedded-owner-input');
+    const brandSuggestions = document.getElementById('embedded-brand-suggestions');
+    const modelSuggestions = document.getElementById('embedded-model-suggestions');
+    const ownerSuggestions = document.getElementById('embedded-owner-suggestions');
+
+    if (brandInput && brandSuggestions) {
+      setupInputAutocomplete(brandInput, brandSuggestions);
+    }
+
+    if (modelInput && modelSuggestions) {
+      setupInputAutocomplete(modelInput, modelSuggestions);
+    }
+
+    if (ownerInput && ownerSuggestions) {
+      setupInputAutocomplete(ownerInput, ownerSuggestions);
+    }
+  }
+
+  function setupInputAutocomplete(input, suggestionsDiv) {
+    // Evento para ocultar sugerencias al perder focus
+    input.addEventListener('blur', function(e) {
+      // Pequeño delay para permitir que se ejecute el click en las sugerencias
+      setTimeout(() => {
+        suggestionsDiv.classList.add('hidden');
+      }, 200);
+    });
+  }
+
+  // Eventos para actualizar sugerencias desde el servidor
+  window.addEventListener("phx:update_brand_suggestions", (e) => {
+    const suggestionsDiv = document.getElementById('embedded-brand-suggestions');
+    const input = document.getElementById('embedded-brand-input');
+    updateSuggestions(suggestionsDiv, input, e.detail.suggestions);
+  });
+
+  window.addEventListener("phx:update_model_suggestions", (e) => {
+    const suggestionsDiv = document.getElementById('embedded-model-suggestions');
+    const input = document.getElementById('embedded-model-input');
+    updateSuggestions(suggestionsDiv, input, e.detail.suggestions);
+  });
+
+  window.addEventListener("phx:update_owner_suggestions", (e) => {
+    const suggestionsDiv = document.getElementById('embedded-owner-suggestions');
+    const input = document.getElementById('embedded-owner-input');
+    updateSuggestions(suggestionsDiv, input, e.detail.suggestions);
+  });
+
+  function updateSuggestions(suggestionsDiv, input, suggestions) {
+    if (!suggestionsDiv || !input) return;
+
+    if (suggestions.length === 0) {
+      suggestionsDiv.classList.add('hidden');
+      return;
+    }
+
+    // Crear lista de sugerencias
+    const suggestionsList = suggestions.map(suggestion => 
+      `<div class="suggestion-item px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer text-gray-700 dark:text-gray-300" data-value="${suggestion}">${suggestion}</div>`
+    ).join('');
+
+    suggestionsDiv.innerHTML = suggestionsList;
+    suggestionsDiv.classList.remove('hidden');
+
+    // Agregar eventos de click a las sugerencias
+    const suggestionItems = suggestionsDiv.querySelectorAll('.suggestion-item');
+    suggestionItems.forEach(item => {
+      item.addEventListener('click', function() {
+        input.value = this.getAttribute('data-value');
+        suggestionsDiv.classList.add('hidden');
+        input.focus();
+      });
+    });
+  }
+</script>

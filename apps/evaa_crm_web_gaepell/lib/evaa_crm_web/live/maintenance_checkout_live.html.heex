@@ -1,0 +1,74 @@
+<div class="max-w-3xl mx-auto py-8">
+  <h1 class="text-2xl font-bold mb-6 flex items-center gap-2 text-blue-700">
+    <svg class="w-7 h-7 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-6a2 2 0 012-2h2a2 2 0 012 2v6m-6 4h6a2 2 0 002-2v-6a2 2 0 00-2-2h-6a2 2 0 00-2 2v6a2 2 0 002 2z"/></svg>
+    Checkout de Camiones
+  </h1>
+
+  <%= if @step == :list do %>
+    <h2 class="text-lg font-semibold mb-4">Tickets disponibles para checkout</h2>
+    <div class="space-y-2">
+      <%= for ticket <- @tickets do %>
+        <div class="p-4 bg-white dark:bg-gray-800 rounded shadow border flex items-center justify-between">
+          <div>
+            <div class="font-bold text-blue-700">Ticket #<%= ticket.id %></div>
+            <div class="text-sm text-gray-600 dark:text-gray-300">Camión: <%= ticket.truck_id %> | Estado: <%= ticket.status %></div>
+            <div class="text-xs text-gray-400">Creado: <%= Calendar.strftime(ticket.inserted_at, "%d/%m/%Y %H:%M") %></div>
+          </div>
+          <button phx-click="select_ticket" phx-value-ticket_id={ticket.id} class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded font-bold">Seleccionar</button>
+        </div>
+      <% end %>
+      <%= if Enum.empty?(@tickets) do %>
+        <div class="text-gray-500">No hay tickets disponibles para checkout.</div>
+      <% end %>
+    </div>
+  <% end %>
+
+  <%= if @step == :form and @selected_ticket do %>
+    <h2 class="text-lg font-semibold mb-4">Registrar Checkout para Ticket #<%= @selected_ticket.id %></h2>
+    <div class="mb-4 p-4 bg-gray-50 dark:bg-gray-700 rounded">
+      <div class="font-bold">Camión: <%= @selected_ticket.truck_id %></div>
+      <div class="text-sm">Estado actual: <%= @selected_ticket.status %></div>
+      <div class="text-xs text-gray-400">Creado: <%= Calendar.strftime(@selected_ticket.inserted_at, "%d/%m/%Y %H:%M") %></div>
+    </div>
+    <.form :let={f} for={@checkout_changeset} phx-submit="guardar_checkout">
+      <div class="mb-4">
+        <label class="block text-sm font-medium mb-1">Nombre de quien recibe</label>
+        <input name="maintenance_ticket_checkout[delivered_to_name]" class="w-full rounded border-gray-300 dark:bg-gray-700 dark:text-white" />
+      </div>
+      <div class="mb-4">
+        <label class="block text-sm font-medium mb-1">Cédula/ID</label>
+        <input name="maintenance_ticket_checkout[delivered_to_id_number]" class="w-full rounded border-gray-300 dark:bg-gray-700 dark:text-white" />
+      </div>
+      <div class="mb-4">
+        <label class="block text-sm font-medium mb-1">Teléfono</label>
+        <input name="maintenance_ticket_checkout[delivered_to_phone]" class="w-full rounded border-gray-300 dark:bg-gray-700 dark:text-white" />
+      </div>
+      <div class="mb-4">
+        <label class="block text-sm font-medium mb-1">Fecha y hora de entrega</label>
+        <input type="datetime-local" name="maintenance_ticket_checkout[delivered_at]" class="w-full rounded border-gray-300 dark:bg-gray-700 dark:text-white" />
+      </div>
+      <div class="mb-4">
+        <label class="block text-sm font-medium mb-1">Notas/Observaciones</label>
+        <textarea name="maintenance_ticket_checkout[notes]" class="w-full rounded border-gray-300 dark:bg-gray-700 dark:text-white"></textarea>
+      </div>
+      <div class="mb-4">
+        <label class="block text-sm font-medium mb-1">Fotos de evidencia (máx. 3, opcional)</label>
+        <.live_file_input upload={@uploads.photos} class="w-full" />
+        <%= for err <- upload_errors(@uploads.photos) do %>
+          <div class="text-xs text-red-600 mt-1">Error: <%= err %></div>
+        <% end %>
+      </div>
+      <div class="mb-4">
+        <label class="block text-sm font-medium mb-1">Firma digital <span class="text-red-600">*</span></label>
+        <div id="signature-pad" phx-hook="SignaturePad" class="border rounded bg-white dark:bg-gray-700" style="touch-action: none; width: 100%; max-width: 400px; height: 180px;"></div>
+        <input type="hidden" name="maintenance_ticket_checkout[signature]" id="signature-data" />
+        <button type="button" id="clear-signature" class="mt-2 px-3 py-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded">Limpiar firma</button>
+        <div class="text-xs text-gray-500 mt-1">La firma es obligatoria para completar el checkout.</div>
+      </div>
+      <div class="flex justify-end gap-2 mt-6">
+        <button type="button" phx-click="cancel" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded">Cancelar</button>
+        <button type="submit" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded font-bold">Registrar Checkout</button>
+      </div>
+    </.form>
+  <% end %>
+</div> 

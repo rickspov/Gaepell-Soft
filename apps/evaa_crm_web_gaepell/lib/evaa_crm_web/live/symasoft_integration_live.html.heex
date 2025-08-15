@@ -1,0 +1,597 @@
+<div class="min-h-screen bg-gray-50 dark:bg-gray-900">
+  <div class="container mx-auto px-4 py-8">
+  <!-- Header -->
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+        📊 Integración Symasoft
+          </h1>
+      <p class="text-gray-600 dark:text-gray-400">
+        Importa y gestiona cotizaciones PDF de Symasoft
+          </p>
+        </div>
+
+    <!-- Import Section -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-8">
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="text-2xl font-bold text-gray-900 dark:text-white">
+          📥 Importar PDF de Symasoft
+        </h2>
+          <button phx-click="show_import_modal"
+                class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-200">
+          📥 Importar PDF de Symasoft
+          </button>
+      </div>
+
+      <div class="text-sm text-gray-500 dark:text-gray-400">
+        Sube archivos PDF de facturas o recibos de ingreso de Symasoft para extraer y procesar las cotizaciones
+      </div>
+    </div>
+    
+    <!-- Recent Imports Section -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-8">
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="text-2xl font-bold text-gray-900 dark:text-white">
+          📋 Importaciones Recientes
+        </h2>
+        <div class="text-sm text-gray-500 dark:text-gray-400">
+          Últimas 10 importaciones
+        </div>
+      </div>
+
+      <!-- Imports Table -->
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+          <thead class="bg-gray-50 dark:bg-gray-700">
+            <tr>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                Archivo
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                Estado
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                Cotización
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                Camión
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                Ticket
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                Fecha
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                Acciones
+              </th>
+            </tr>
+          </thead>
+          <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+            <%= for import <- @symasoft_imports do %>
+              <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                  <%= import.filename %>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <span class={[
+                    "inline-flex px-2 py-1 text-xs font-semibold rounded-full",
+                    case import.import_status do
+                      "pending" -> "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
+                      "processing" -> "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+                      "completed" -> "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                      "failed" -> "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+                      _ -> "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200"
+                    end
+                  ]}>
+                    <%= String.upcase(import.import_status) %>
+                  </span>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                  <%= if import.quotation_number do %>
+                    <div>
+                      <div class="font-medium"><%= import.quotation_number %></div>
+                      <%= if import.quotation_amount do %>
+                        <div class="text-xs">RD$ <%= format_currency(import.quotation_amount) %></div>
+                      <% end %>
+                    </div>
+                  <% else %>
+                    <span class="text-gray-400">-</span>
+                  <% end %>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                  <%= if import.truck do %>
+                    <div class="font-medium"><%= import.truck.license_plate %></div>
+                    <div class="text-xs"><%= import.truck.brand %> <%= import.truck.model %></div>
+                  <% else %>
+                    <span class="text-gray-400">-</span>
+                  <% end %>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                  <%= cond do %>
+                    <% import.maintenance_ticket -> %>
+                      <div>
+                        <div class="font-medium">Ticket #<%= import.maintenance_ticket.id %></div>
+                        <div class="text-xs"><%= import.maintenance_ticket.title %></div>
+                      </div>
+                    <% import.production_order -> %>
+                      <div>
+                        <div class="font-medium">Orden #<%= import.production_order.id %></div>
+                        <div class="text-xs"><%= import.production_order.title %></div>
+                      </div>
+                    <% true -> %>
+                      <span class="text-gray-400">-</span>
+                  <% end %>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                  <%= Calendar.strftime(import.inserted_at, "%d/%m/%Y %H:%M") %>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                  <button phx-click="load_import" phx-value-import_id={import.id}
+                          class="text-blue-600 hover:text-blue-900 dark:hover:text-blue-400">
+                    👁️ Ver
+                  </button>
+                  <%= if import.import_status == "completed" do %>
+                    <button phx-click="show_association_modal" phx-value-import_id={import.id}
+                            class="text-green-600 hover:text-green-900 dark:hover:text-green-400">
+                      🔗 Asociar
+                    </button>
+                  <% end %>
+                  <button phx-click="delete_import" phx-value-import_id={import.id}
+                          class="text-red-600 hover:text-red-900 dark:hover:text-red-400"
+                          onclick="return confirm('¿Estás seguro de que quieres eliminar esta importación? Esta acción no se puede deshacer.')">
+                    🗑️ Eliminar
+                  </button>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Upload Progress Modal -->
+    <%= if @is_uploading do %>
+      <div class="fixed inset-0 bg-red-600 bg-opacity-75 overflow-y-auto h-full w-full z-50" id="upload-progress-modal">
+        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-yellow-400">
+          <div class="mt-3 text-center">
+            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 animate-pulse">
+              <svg class="h-6 w-6 text-red-600 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+              </svg>
+            </div>
+            <h3 class="text-lg leading-6 font-medium text-black mt-4">
+              🚨 MODAL DE PRUEBA - Subiendo PDF...
+            </h3>
+            <div class="mt-4">
+              <div class="w-full bg-gray-200 rounded-full h-3">
+                <div class="bg-red-600 h-3 rounded-full transition-all duration-500 ease-out" style={"width: #{@upload_progress}%"}>
+                </div>
+              </div>
+              <p class="text-sm font-bold text-black mt-3">
+                <%= @upload_status %>
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    <% end %>
+  </div>
+
+  <!-- Association Modal -->
+  <%= if @show_association_modal and @selected_import do %>
+    <div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" id="association-modal">
+      <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white dark:bg-gray-800">
+        <div class="mt-3">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-medium text-gray-900 dark:text-white">
+              🔗 Asociar Cotización
+            </h3>
+            <button phx-click="close_association_modal" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+            </button>
+          </div>
+          
+          <div class="mb-6">
+            <p class="text-sm text-gray-600 dark:text-gray-300 mb-4">
+              Asocia esta cotización con un camión y/o ticket:
+            </p>
+            
+            <form phx-submit="associate_quotation" class="space-y-4">
+              <!-- Información de la cotización -->
+            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+              <div class="text-sm">
+                  <div><strong>Archivo:</strong> <%= @selected_import.filename %></div>
+                  <%= if @selected_import.quotation_number do %>
+                    <div><strong>Número:</strong> <%= @selected_import.quotation_number %></div>
+                  <% end %>
+                  <%= if @selected_import.quotation_amount do %>
+                    <div><strong>Monto:</strong> RD$ <%= format_currency(@selected_import.quotation_amount) %></div>
+                  <% end %>
+                </div>
+              </div>
+
+              <!-- Número de cotización -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Número de Cotización
+                </label>
+                <input type="text" name="quotation_number" value={@selected_import.quotation_number || ""}
+                       class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                       placeholder="Ej: COT-2025-001" />
+              </div>
+
+              <!-- Monto de cotización -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Monto de Cotización
+                </label>
+                <input type="number" step="0.01" name="quotation_amount" 
+                       value={if @selected_import.quotation_amount, do: Decimal.to_string(@selected_import.quotation_amount), else: ""}
+                       class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                       placeholder="0.00" />
+              </div>
+
+              <!-- Camión -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Camión (Opcional)
+                </label>
+                <select name="truck_id" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white">
+                  <option value="">Seleccionar camión...</option>
+                  <%= for {license_plate, id} <- @trucks do %>
+                    <option value={id} selected={@selected_import.truck_id == id}>
+                      <%= license_plate %>
+                    </option>
+                  <% end %>
+                </select>
+              </div>
+
+              <!-- Tipo de ticket -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Tipo de Ticket (Opcional)
+                </label>
+                <select name="ticket_type" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white">
+                  <option value="">Sin ticket</option>
+                  <option value="maintenance">Ticket de Mantenimiento</option>
+                  <option value="production">Orden de Producción</option>
+                </select>
+              </div>
+
+              <!-- Ticket específico -->
+              <div id="ticket_selection" class="hidden">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Seleccionar Ticket
+                </label>
+                <select name="ticket_id" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white">
+                  <option value="">Seleccionar...</option>
+                </select>
+            </div>
+
+              <!-- Notas -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Notas (Opcional)
+                </label>
+                <textarea name="quotation_notes" rows="3"
+                          class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                          placeholder="Notas adicionales sobre la cotización..."><%= @selected_import.quotation_notes || "" %></textarea>
+          </div>
+
+          <div class="flex justify-end space-x-3">
+                <button type="button" phx-click="close_association_modal"
+                    class="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-2 px-4 rounded-lg transition duration-200">
+              Cancelar
+            </button>
+                <button type="submit"
+                    class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-200">
+                  🔗 Asociar Cotización
+            </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  <% end %>
+
+  <!-- Import Modal -->
+  <%= if @show_import_modal do %>
+    <div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" id="import-modal">
+      <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white dark:bg-gray-800">
+        <div class="mt-3">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-medium text-gray-900 dark:text-white">
+              📥 Importar PDF de Symasoft
+            </h3>
+            <button phx-click="close_import_modal" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+            </button>
+          </div>
+          
+          <div class="mb-6">
+            <p class="text-sm text-gray-600 dark:text-gray-300 mb-4">
+              Sube un archivo PDF de recibo de ingreso de Symasoft para extraer y procesar las facturas:
+            </p>
+            
+            <form phx-submit="import_symasoft_pdf" phx-change="validate_pdf">
+              <div class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 text-center">
+                <!-- Estado de carga -->
+                <div id="upload-progress" class="hidden mb-4">
+                  <div class="bg-blue-50 dark:bg-blue-900 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
+                    <div class="flex items-center justify-center">
+                      <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 dark:border-blue-400 mr-3"></div>
+                      <p class="text-sm text-blue-800 dark:text-blue-200">Procesando PDF...</p>
+                    </div>
+                  </div>
+                </div>
+
+                <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                  <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+                <div class="mt-4">
+                  <.live_file_input upload={@uploads.pdf_file} />
+                </div>
+                <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                  PDF, máximo 10MB
+                </p>
+                <button type="submit" class="mt-4 bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-200">
+                  📤 Procesar PDF
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <div class="flex justify-end space-x-3">
+            <button phx-click="close_import_modal"
+                    class="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-2 px-4 rounded-lg transition duration-200">
+              Cancelar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  <% end %>
+
+  <!-- Preview Modal -->
+  <%= if @import_result do %>
+    <div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" id="preview-modal">
+      <div class="relative top-10 mx-auto p-5 border w-11/12 max-w-4xl shadow-lg rounded-md bg-white dark:bg-gray-800">
+        <div class="mt-3">
+          <div class="flex items-center justify-between mb-6">
+            <h3 class="text-2xl font-bold text-gray-900 dark:text-white">
+              📄 Datos Extraídos del PDF
+            </h3>
+            <button phx-click="close_preview" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+            </button>
+          </div>
+
+          <% symasoft_view = generate_symasoft_view(@import_result) %>
+          
+          <!-- Header Information -->
+          <div class="mb-6">
+            <div class="text-center mb-4">
+              <h2 class="text-lg font-bold text-gray-900">
+                <%= symasoft_view.header.title %>
+              </h2>
+            </div>
+
+              <div class="space-y-2">
+              <%= if symasoft_view.header.title == "FACTURA" do %>
+                <div class="flex">
+                  <span class="w-32 font-semibold">Cliente:</span>
+                  <span class="ml-4"><%= symasoft_view.header.cliente %></span>
+                </div>
+                <div class="flex">
+                  <span class="w-32 font-semibold">Número:</span>
+                  <span class="ml-4"><%= symasoft_view.header.numero_factura %></span>
+                </div>
+                <div class="flex">
+                  <span class="w-32 font-semibold">Fecha:</span>
+                  <span class="ml-4"><%= symasoft_view.header.fecha_factura %></span>
+                </div>
+                <div class="flex">
+                  <span class="w-32 font-semibold">Total:</span>
+                  <span class="ml-4">RD$ <%= format_currency(symasoft_view.header.monto_total) %></span>
+                </div>
+              <% else %>
+                <div class="flex">
+                  <span class="w-32 font-semibold">Recibido de:</span>
+                  <span class="ml-4"><%= symasoft_view.header.cliente %></span>
+                </div>
+                <div class="flex">
+                  <span class="w-32 font-semibold">La Suma de:</span>
+                  <span class="ml-4">RD$ <%= format_currency(symasoft_view.header.monto_total) %></span>
+                </div>
+                <div class="flex">
+                  <span class="w-32 font-semibold">Forma de Pago:</span>
+                  <span class="ml-4"><%= symasoft_view.header.forma_pago %></span>
+                </div>
+                <div class="flex">
+                  <span class="w-32 font-semibold">Concepto:</span>
+                  <span class="ml-4"><%= symasoft_view.header.concepto %></span>
+                </div>
+              <% end %>
+            </div>
+          </div>
+
+          <!-- Items Table for Facturas -->
+          <%= if symasoft_view.header.title == "FACTURA" and symasoft_view.items do %>
+            <div class="mb-6">
+              <div class="text-center mb-4">
+                <h2 class="text-lg font-bold text-gray-900">
+                  ITEMS DE LA FACTURA
+                </h2>
+              </div>
+              
+              <table class="w-full border-collapse border border-gray-400">
+                <thead>
+                  <tr class="bg-gray-100">
+                    <th class="border border-gray-400 px-4 py-2 text-left">Descripción</th>
+                    <th class="border border-gray-400 px-4 py-2 text-center">Cantidad</th>
+                    <th class="border border-gray-400 px-4 py-2 text-right">Precio Unit.</th>
+                    <th class="border border-gray-400 px-4 py-2 text-right">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <%= for item <- symasoft_view.items do %>
+                    <tr>
+                      <td class="border border-gray-400 px-4 py-2"><%= item.descripcion %></td>
+                      <td class="border border-gray-400 px-4 py-2 text-center"><%= item.cantidad %></td>
+                      <td class="border border-gray-400 px-4 py-2 text-right">RD$ <%= format_currency(item.precio_unitario) %></td>
+                      <td class="border border-gray-400 px-4 py-2 text-right">RD$ <%= format_currency(item.total) %></td>
+                    </tr>
+                  <% end %>
+                  <!-- Totals Row -->
+                  <tr class="bg-gray-50 font-semibold">
+                    <td class="border border-gray-400 px-4 py-2" colspan="3">TOTAL</td>
+                    <td class="border border-gray-400 px-4 py-2 text-right">RD$ <%= format_currency(symasoft_view.header.monto_total) %></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          <% end %>
+
+          <!-- Facturas Table for Recibos -->
+          <%= if symasoft_view.header.title == "RECIBO DE INGRESO RD$" do %>
+            <div class="mb-6">
+              <div class="text-center mb-4">
+                <h2 class="text-lg font-bold text-gray-900">
+                  F A C T U R A S
+                </h2>
+              </div>
+              
+              <table class="w-full border-collapse border border-gray-400">
+                <thead>
+                  <tr class="bg-gray-100">
+                    <th class="border border-gray-400 px-4 py-2 text-center">Número</th>
+                    <th class="border border-gray-400 px-4 py-2 text-center">Fecha</th>
+                    <th class="border border-gray-400 px-4 py-2 text-right">Valor</th>
+                    <th class="border border-gray-400 px-4 py-2 text-right">Recibido</th>
+                    <th class="border border-gray-400 px-4 py-2 text-right">Pendiente</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <%= for factura <- symasoft_view.facturas do %>
+                    <tr>
+                      <td class="border border-gray-400 px-4 py-2 text-center"><%= factura.numero %></td>
+                      <td class="border border-gray-400 px-4 py-2 text-center"><%= factura.fecha %></td>
+                      <td class="border border-gray-400 px-4 py-2 text-right">RD$ <%= format_currency(factura.valor) %></td>
+                      <td class="border border-gray-400 px-4 py-2 text-right">RD$ <%= format_currency(factura.recibido) %></td>
+                      <td class="border border-gray-400 px-4 py-2 text-right">RD$ <%= format_currency(factura.pendiente) %></td>
+                    </tr>
+                  <% end %>
+                  <!-- Totals Row -->
+                  <tr class="bg-gray-50 font-semibold">
+                    <td class="border border-gray-400 px-4 py-2 text-center" colspan="2">TOTALES</td>
+                    <td class="border border-gray-400 px-4 py-2 text-right">RD$ <%= format_currency(symasoft_view.header.monto_total) %></td>
+                    <td class="border border-gray-400 px-4 py-2 text-right">RD$ <%= format_currency(symasoft_view.header.monto_total) %></td>
+                    <td class="border border-gray-400 px-4 py-2 text-right">RD$ <%= format_currency(symasoft_view.balance_pendiente) %></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          <% end %>
+
+            <!-- Balance Section -->
+            <div class="mb-6">
+            <div class="text-center mb-4">
+              <h2 class="text-lg font-bold text-gray-900">
+                Balance Pendiente RD$ <%= format_currency(symasoft_view.balance_pendiente) %>
+              </h2>
+              </div>
+            
+            <div class="text-center text-sm text-gray-600">
+                <%= length(symasoft_view.facturas) %> Factura(s)
+              </div>
+            </div>
+
+            <!-- Footer -->
+          <div class="border-t border-gray-200 dark:border-gray-700 pt-4">
+            <div class="flex justify-between items-center">
+              <div class="text-sm">
+                <div><strong><%= symasoft_view.footer.cajero %></strong></div>
+                <div>Cajero</div>
+              </div>
+              <div class="text-sm">
+                <div><strong>Firma Cliente</strong></div>
+                <div class="border-t-2 border-gray-400 mt-1 pt-1">_________________</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="flex justify-center space-x-4 mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+            <button phx-click="close_preview"
+                    class="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-2 px-6 rounded-lg transition duration-200">
+              Cerrar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  <% end %>
+</div>
+
+<script>
+  // Manejar la selección de tipo de ticket
+  document.addEventListener('DOMContentLoaded', function() {
+    const ticketTypeSelect = document.querySelector('select[name="ticket_type"]');
+    const ticketSelection = document.getElementById('ticket_selection');
+    const ticketIdSelect = document.querySelector('select[name="ticket_id"]');
+    
+    if (ticketTypeSelect) {
+      ticketTypeSelect.addEventListener('change', function() {
+        const selectedType = this.value;
+        
+        if (selectedType === '') {
+          ticketSelection.classList.add('hidden');
+          ticketIdSelect.innerHTML = '<option value="">Seleccionar...</option>';
+        } else {
+          ticketSelection.classList.remove('hidden');
+          
+          // Limpiar opciones actuales
+          ticketIdSelect.innerHTML = '<option value="">Seleccionar...</option>';
+          
+          // Agregar opciones según el tipo seleccionado
+          if (selectedType === 'maintenance') {
+            // Agregar tickets de mantenimiento
+            const maintenanceTickets = <%= Jason.encode!(Enum.map(@maintenance_tickets, fn {label, id} -> %{label: label, id: id} end)) %>;
+            maintenanceTickets.forEach(function(ticket) {
+              const option = document.createElement('option');
+              option.value = ticket.id;
+              option.textContent = ticket.label;
+              ticketIdSelect.appendChild(option);
+            });
+          } else if (selectedType === 'production') {
+            // Agregar órdenes de producción
+            const productionOrders = <%= Jason.encode!(Enum.map(@production_orders, fn {label, id} -> %{label: label, id: id} end)) %>;
+            productionOrders.forEach(function(order) {
+              const option = document.createElement('option');
+              option.value = order.id;
+              option.textContent = order.label;
+              ticketIdSelect.appendChild(option);
+            });
+          }
+        }
+      });
+    }
+  });
+
+  // Mostrar estado de carga cuando se envía el formulario
+  document.addEventListener('phx:submit', function(e) {
+    if (e.target.closest('form[phx-submit="import_symasoft_pdf"]')) {
+      const progressDiv = document.getElementById('upload-progress');
+      if (progressDiv) {
+        progressDiv.classList.remove('hidden');
+      }
+    }
+  });
+</script> 
