@@ -18,284 +18,208 @@
         </svg>Dashboard
       </a>
     </li>
-    <li class="me-2">
-      <a href="#" phx-click="switch_tab" phx-value-tab="kanban" 
-         class={"inline-flex items-center justify-center p-4 border-b-2 rounded-t-lg hover:text-gray-600 hover:border-gray-300 dark:hover:text-gray-300 group " <>
-           (if @current_tab == "kanban", do: "text-blue-600 border-blue-600 dark:text-blue-500 dark:border-blue-500", else: "border-transparent")}>
-        <svg class={"w-4 h-4 me-2 " <> (if @current_tab == "kanban", do: "text-blue-600 dark:text-blue-500", else: "text-gray-400 group-hover:text-gray-500 dark:text-gray-500 dark:group-hover:text-gray-300")} aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 18 18">
-          <path d="M6.143 0H1.857A1.857 1.857 0 0 0 0 1.857v4.286C0 7.169.831 8 1.857 8h4.286A1.857 1.857 0 0 0 8 6.143V1.857A1.857 1.857 0 0 0 6.143 0Zm10 0h-4.286A1.857 1.857 0 0 0 10 1.857v4.286C10 7.169 10.831 8 11.857 8h4.286A1.857 1.857 0 0 0 18 6.143V1.857A1.857 1.857 0 0 0 16.143 0Zm-10 10H1.857A1.857 1.857 0 0 0 0 11.857v4.286C0 17.169.831 18 1.857 18h4.286A1.857 1.857 0 0 0 8 16.143v-4.286A1.857 1.857 0 0 0 6.143 10Zm10 0h-4.286A1.857 1.857 0 0 0 10 11.857v4.286c0 1.026.831 1.857 1.857 1.857h4.286A1.857 1.857 0 0 0 18 16.143v-4.286A1.857 1.857 0 0 0 16.143 10Z"/>
-        </svg>Kanban
-      </a>
-    </li>
+
   </ul>
 </div>
 
-<!-- Contenido del Tab Kanban -->
-<%= if @current_tab == "kanban" do %>
-  <!-- Vista Horizontal Integrada -->
-  <div id="kanban-container" class="kanban-horizontal-view space-y-4" phx-hook="KanbanDragDrop">
-  <%= for workflow_data <- @items do %>
-    <div class="workflow-pipeline">
-      <!-- Header del Workflow -->
-      <div class="workflow-header mb-3">
-        <div class="flex items-center justify-between">
-          <div class="flex items-center gap-2">
-            <div class="flex items-center gap-2">
-              <%= case workflow_data.workflow.workflow_type do %>
-                <% "events" -> %>
-                  <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none"/>
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6l4 2"/>
-                  </svg>
-                <% "maintenance" -> %>
-                  <svg class="w-5 h-5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536M9 13h3l6 6M3 21l6-6m0 0V9a3 3 0 013-3h3m-6 6l-6 6"/>
-                  </svg>
-                <% "leads" -> %>
-                  <svg class="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
-                  </svg>
-                <% _ -> %>
-                  <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
-                  </svg>
-              <% end %>
-              <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">
-                <%= workflow_data.workflow.name %>
-              </h3>
-            </div>
-            <span class="text-xs text-gray-500 dark:text-gray-400">
-              (<%= workflow_data.total_items %>)
-            </span>
-          </div>
-          <div class="flex items-center gap-2">
-            <%= case workflow_data.workflow.workflow_type do %>
-              <% "maintenance" -> %>
-                <button phx-click="new_ticket" phx-value-workflow={workflow_data.workflow.id}
-                  class="bg-orange-600 hover:bg-orange-700 text-white px-2 py-1 rounded text-xs font-medium transition-colors duration-200 flex items-center gap-1"
-                  title="Nuevo Ticket de Mantenimiento">
-                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
-                  +
-                </button>
-              <% "leads" -> %>
-                <button phx-click="new_lead" phx-value-workflow={workflow_data.workflow.id}
-                  class="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded text-xs font-medium transition-colors duration-200 flex items-center gap-1"
-                  title="Nuevo Prospecto">
-                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
-                  +
-                </button>
-              <% "production" -> %>
-                <button phx-click="new_production_order" phx-value-workflow={workflow_data.workflow.id}
-                  class="bg-purple-600 hover:bg-purple-700 text-white px-2 py-1 rounded text-xs font-medium transition-colors duration-200 flex items-center gap-1"
-                  title="Nueva Orden de Producción">
-                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
-                  +
-                </button>
-              <% _ -> %>
-                <button phx-click="add_item" phx-value-workflow={workflow_data.workflow.id}
-                  class="bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded text-xs font-medium transition-colors duration-200 flex items-center gap-1"
-                  title="Agregar">
-                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
-                  +
-                </button>
-            <% end %>
-          </div>
-        </div>
-      </div>
-
-      <!-- Pipeline Horizontal -->
-      <div class="workflow-pipeline-board flex gap-3 overflow-x-auto pb-2">
-        <%= for state_data <- workflow_data.states do %>
-          <div class={"kanban-col bg-white/80 dark:bg-[#23272f]/80 backdrop-blur-lg rounded-xl p-3 min-w-[280px] flex-shrink-0 border border-gray-200/60 dark:border-[#2d323c]/60 shadow-lg transition-all duration-200 hover:scale-[1.01] group relative"}
-               data-kanban-column 
-               data-status={state_data.state.name} 
-               data-workflow={workflow_data.workflow.id}>
-            
-            <!-- Header de la Columna -->
-            <div class={"kanban-col-header font-bold mb-3 flex items-center justify-between px-2 py-2 rounded-t-lg border-b-2"}
-                 style={"border-color: #{state_data.state.color}60; color: #{state_data.state.color};"}>
-              <span class="flex items-center gap-2">
-                <div class="w-2.5 h-2.5 rounded-full" style={"background-color: #{state_data.state.color}"}></div>
-                <span class="text-xs font-semibold"><%= state_data.state.label %></span>
-              </span>
-              <span class={"text-xs font-bold px-2 py-0.5 rounded-full shadow"}
-                   style={"background-color: #{state_data.state.color}20; color: #{state_data.state.color};"}>
-                <%= state_data.count %>
-              </span>
-            </div>
-
-            <!-- Items de la Columna -->
-            <div class="kanban-col-cards space-y-2 min-h-[100px]">
-              <%= for item <- state_data.items do %>
-                <div data-id={get_item_id_with_prefix(item)} 
-                     class={"kanban-card rounded-lg shadow-md p-2 cursor-move flex flex-col gap-1 border-l-3 transition-all duration-200 group/card relative bg-white/90 dark:bg-[#23272f]/80 backdrop-blur-lg border-opacity-60 hover:scale-[1.02] hover:shadow-lg " <>
-                       (case item.workflow_type do
-                         "maintenance" -> "border-orange-400/80"
-                         "production" -> "border-purple-400/80"
-                         "leads" -> "border-green-400/80"
-                         _ -> "border-blue-400/80"
-                       end)}
-                     phx-value-id={get_item_id_with_prefix(item)}
-                     draggable="true">
-                  
-                  <!-- Título y Tipo -->
-                  <div class="flex items-center gap-1 mb-1">
-                    <span class="font-semibold text-xs tracking-tight text-gray-800 dark:text-gray-100 truncate">
-                      <%= item.title %>
-                    </span>
-                    <span class={"text-xs font-bold px-1.5 py-0.5 rounded-full shadow " <>
-                      (case item.workflow_type do
-                        "maintenance" -> "bg-orange-200 text-orange-900 dark:bg-orange-900/60 dark:text-orange-200"
-                        "production" -> "bg-purple-200 text-purple-900 dark:bg-purple-900/60 dark:text-purple-200"
-                        "leads" -> "bg-green-200 text-green-900 dark:bg-green-900/60 dark:text-green-200"
-                        _ -> "bg-blue-200 text-blue-900 dark:bg-blue-900/60 dark:text-blue-200"
-                      end)}>
-                      <%= case item.workflow_type do
-                        "maintenance" -> "T"
-                        "production" -> "P"
-                        "leads" -> "L"
-                        _ -> "E"
-                      end %>
-                    </span>
-                  </div>
-
-                  <!-- Información Adicional Compacta -->
-                  <div class="flex flex-wrap items-center gap-1 text-xs text-gray-500 dark:text-gray-300 mb-1">
-                    <%= if item.company_name, do: raw("<span class='inline-flex items-center gap-0.5'><svg class='w-2.5 h-2.5 opacity-60' fill='none' stroke='currentColor' viewBox='0 0 24 24'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M3 7v4a1 1 0 001 1h3m10-5h3a1 1 0 011 1v4a1 1 0 01-1 1h-3m-10 0v6a1 1 0 001 1h8a1 1 0 001-1v-6m-10 0h10'/></svg>" <> String.slice(item.company_name, 0, 8) <> "</span>") %>
-                    <%= if item.due_date, do: raw("<span class='inline-flex items-center gap-0.5'><svg class='w-2.5 h-2.5 opacity-60' fill='none' stroke='currentColor' viewBox='0 0 24 24'><rect width='18' height='18' x='3' y='3' rx='2' stroke-width='2'/><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M8 7v2m8-2v2m-9 4h10'/></svg>" <> Calendar.strftime(item.due_date, "%d/%m") <> "</span>") %>
-                  </div>
-
-                  <!-- Responsable Compacto -->
-                  <div class="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 mb-1">
-                    <span class="truncate">Resp: <%= if Map.has_key?(item, :specialist_name), do: String.slice(item.specialist_name || "", 0, 8), else: get_specialist_name(item.specialist_id) || "-" %></span>
-                  </div>
-
-                  <!-- Acciones Rápidas Compactas -->
-                  <div class="mt-1 flex gap-1" data-no-dnd>
-                    <button phx-click="show_item_details" 
-                            phx-value-id={get_item_id_with_prefix(item)} 
-                            class="text-blue-600 dark:text-blue-400 text-xs flex items-center gap-0.5 hover:underline group-hover/card:scale-110 transition-transform" 
-                            title="Ver más">
-                      <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                      </svg> 
-                      Ver
-                    </button>
-                  </div>
-
-                  <!-- Feedback visual drag & drop -->
-                  <div class="absolute inset-0 rounded-lg pointer-events-none opacity-0 group-hover:opacity-10 transition-all duration-200 bg-gradient-to-br from-blue-200/40 via-white/20 to-blue-100/30"></div>
-                </div>
-              <% end %>
-            </div>
-          </div>
-        <% end %>
-      </div>
-    </div>
-  <% end %>
-</div>
-<% end %>
-
 <!-- Contenido del Tab Dashboard -->
 <%= if @current_tab == "dashboard" do %>
-  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-    <!-- Card de Tickets -->
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 border border-gray-200 dark:border-gray-700">
-      <div class="flex items-center">
-        <div class="p-3 rounded-full bg-orange-100 dark:bg-orange-900/20">
-          <svg class="w-6 h-6 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536M9 13h3l6 6M3 21l6-6m0 0V9a3 3 0 013-3h3m-6 6l-6 6"/>
-          </svg>
+<div class="space-y-8">
+
+
+      <!-- Stats Cards Modernos -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+    <!-- Camiones Activos -->
+    <div class="relative overflow-hidden hover-lift border-0 shadow-lg hover:shadow-xl transition-all duration-300 bg-card rounded-xl">
+      <div class="absolute inset-0 bg-gradient-to-br from-primary to-accent opacity-10"></div>
+      <div class="flex flex-row items-center justify-between space-y-0 pb-3 relative z-10 p-6">
+        <div>
+          <div class="text-sm font-medium text-muted-foreground">Camiones Activos</div>
+          <div class="text-3xl font-bold text-card-foreground mt-2">
+            <%= @dashboard_stats.total_trucks %>
+          </div>
         </div>
-        <div class="ml-4">
-          <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Tickets Activos</p>
-          <p class="text-2xl font-bold text-gray-900 dark:text-white"><%= @dashboard_stats.tickets_activos %></p>
+        <div class="h-12 w-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg">
+          <svg class="h-6 w-6 text-primary-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                      </svg> 
+          </div>
+      </div>
+      <div class="relative z-10 px-6 pb-6">
+        <p class="text-xs text-muted-foreground mb-2">En operación</p>
+        <div class="flex items-center gap-1 text-xs">
+          <svg class="h-3 w-3 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+          </svg>
+          <span class="font-medium text-success">+2 este mes</span>
         </div>
       </div>
     </div>
 
-    <!-- Card de Leads -->
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 border border-gray-200 dark:border-gray-700">
-      <div class="flex items-center">
-        <div class="p-3 rounded-full bg-green-100 dark:bg-green-900/20">
-          <svg class="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+    <!-- Tickets -->
+    <div class="relative overflow-hidden hover-lift border-0 shadow-lg hover:shadow-xl transition-all duration-300 bg-card dark:bg-card rounded-xl">
+      <div class="absolute inset-0 gradient-warning opacity-10"></div>
+      <div class="flex flex-row items-center justify-between space-y-0 pb-3 relative z-10 p-6">
+        <div>
+          <div class="text-sm font-medium text-slate-600 dark:text-slate-400">Tickets</div>
+          <div class="text-3xl font-bold text-slate-900 dark:text-slate-100 mt-2">
+            <%= @dashboard_stats.pending_tickets %>
+          </div>
+        </div>
+        <div class="h-12 w-12 rounded-xl gradient-warning flex items-center justify-center shadow-lg">
+          <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
           </svg>
         </div>
-        <div class="ml-4">
-          <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Leads Nuevos</p>
-          <p class="text-2xl font-bold text-gray-900 dark:text-white"><%= @dashboard_stats.leads_nuevos %></p>
+      </div>
+      <div class="relative z-10 px-6 pb-6">
+        <p class="text-xs text-slate-500 dark:text-slate-400 mb-2">Mantenimiento + Producción</p>
+        <div class="flex items-center gap-1 text-xs">
+          <svg class="h-3 w-3 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"></path>
+          </svg>
+          <span class="font-medium text-red-600">Activos</span>
         </div>
       </div>
     </div>
 
-    <!-- Card de Producción -->
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 border border-gray-200 dark:border-gray-700">
-      <div class="flex items-center">
-        <div class="p-3 rounded-full bg-purple-100 dark:bg-purple-900/20">
-          <svg class="w-6 h-6 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2a4 4 0 014-4h4m0 0V7a4 4 0 00-4-4H7a4 4 0 00-4 4v10a4 4 0 004 4h4"/>
+    <!-- Evaluaciones -->
+    <div class="relative overflow-hidden hover-lift border-0 shadow-lg hover:shadow-xl transition-all duration-300 bg-card dark:bg-card rounded-xl">
+      <div class="absolute inset-0 gradient-success opacity-10"></div>
+      <div class="flex flex-row items-center justify-between space-y-0 pb-3 relative z-10 p-6">
+        <div>
+          <div class="text-sm font-medium text-slate-600 dark:text-slate-400">Evaluaciones</div>
+          <div class="text-3xl font-bold text-slate-900 dark:text-slate-100 mt-2">
+            <%= @dashboard_stats.completed_maintenance %>
+          </div>
+        </div>
+        <div class="h-12 w-12 rounded-xl gradient-success flex items-center justify-center shadow-lg">
+          <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
           </svg>
         </div>
-        <div class="ml-4">
-          <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Órdenes en Producción</p>
-          <p class="text-2xl font-bold text-gray-900 dark:text-white"><%= @dashboard_stats.ordenes_produccion %></p>
+      </div>
+      <div class="relative z-10 px-6 pb-6">
+        <p class="text-xs text-slate-500 dark:text-slate-400 mb-2">Total de evaluaciones</p>
+        <div class="flex items-center gap-1 text-xs">
+          <svg class="h-3 w-3 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+          </svg>
+          <span class="font-medium text-green-600">Activas</span>
         </div>
       </div>
     </div>
 
-    <!-- Card de Camiones -->
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 border border-gray-200 dark:border-gray-700">
-      <div class="flex items-center">
-        <div class="p-3 rounded-full bg-blue-100 dark:bg-blue-900/20">
-          <svg class="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3a4 4 0 118 0v4m-4 6v6m-4-6h8m-8 6h8"/>
+    <!-- Completados -->
+    <div class="relative overflow-hidden hover-lift border-0 shadow-lg hover:shadow-xl transition-all duration-300 bg-card dark:bg-card rounded-xl">
+      <div class="absolute inset-0 gradient-danger opacity-10"></div>
+      <div class="flex flex-row items-center justify-between space-y-0 pb-3 relative z-10 p-6">
+        <div>
+          <div class="text-sm font-medium text-slate-600 dark:text-slate-400">Completados</div>
+          <div class="text-3xl font-bold text-slate-900 dark:text-slate-100 mt-2">
+            <%= @dashboard_stats.critical_alerts %>
+          </div>
+        </div>
+        <div class="h-12 w-12 rounded-xl gradient-danger flex items-center justify-center shadow-lg">
+          <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
           </svg>
         </div>
-        <div class="ml-4">
-          <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Camiones Activos</p>
-          <p class="text-2xl font-bold text-gray-900 dark:text-white"><%= @dashboard_stats.camiones_activos %></p>
+      </div>
+      <div class="relative z-10 px-6 pb-6">
+        <p class="text-xs text-slate-500 dark:text-slate-400 mb-2">Mantenimiento + Producción</p>
+        <div class="flex items-center gap-1 text-xs">
+          <svg class="h-3 w-3 text-slate-500 dark:text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+          </svg>
+          <span class="font-medium text-slate-500 dark:text-slate-400">Finalizados</span>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Sección de Gráficos -->
-  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700 mb-8">
-    <h2 class="text-xl font-bold text-center text-gray-900 dark:text-white mb-4">Resumen de Actividad</h2>
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <!-- Gráfica de Actividad -->
+  <!-- Main Content Grid -->
+  <div class="grid grid-cols-1 xl:grid-cols-3 gap-8">
+    <!-- Recent Trucks -->
+    <div class="xl:col-span-2 border-0 shadow-lg hover:shadow-xl transition-all duration-300 bg-card dark:bg-card rounded-xl">
+      <div class="bg-gradient-to-r from-slate-50 to-blue-50 dark:from-slate-800/50 dark:to-blue-900/20 rounded-t-xl p-6">
+        <div class="flex items-center justify-between">
       <div>
-        <h3 class="text-base font-semibold text-gray-700 dark:text-gray-200 text-center mb-2">Actividad Reciente</h3>
-        <div class="flex items-end h-40 space-x-2">
-          <%= for {date, count} <- @activity_chart_data do %>
-            <div class="flex flex-col items-center flex-1">
-              <div class="w-7 rounded-t-lg bg-gradient-to-t from-blue-400 to-blue-600 dark:from-blue-700 dark:to-blue-400 shadow-md"
-                   style={"height: #{count * 20 + 8}px"}>
+            <div class="text-lg text-slate-900 dark:text-slate-100 font-semibold">Camiones Recientes</div>
+            <div class="text-slate-600 dark:text-slate-400">Actividad reciente de la flota</div>
+          </div>
+          <a href="/trucks" class="gradient-primary text-white border-0 shadow-lg hover:shadow-xl transition-all duration-200 px-4 py-2 rounded-lg font-medium">
+            Ver todos
+          </a>
+        </div>
+      </div>
+      <div class="p-6">
+        <div class="space-y-4">
+          <%= for truck <- @dashboard_stats.recent_trucks do %>
+            <div class="flex items-center space-x-4 p-4 border border-slate-200/60 dark:border-slate-700/60 rounded-xl hover:shadow-md transition-all duration-200 hover-lift bg-white dark:bg-slate-800/50">
+              <div class="h-16 w-16 rounded-xl bg-slate-100 dark:bg-slate-700 flex items-center justify-center border-2 border-white dark:border-slate-700 shadow-md">
+                <svg class="h-8 w-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                </svg>
               </div>
-              <span class="text-xs text-gray-500 mt-1"><%= Calendar.strftime(date, "%d/%m") %></span>
+              <div class="flex-1">
+                <div class="flex items-center gap-3 mb-1">
+                  <h4 class="font-semibold text-slate-900 dark:text-slate-100"><%= truck.license_plate %></h4>
+                  <span class="gradient-success text-white border-0 px-2 py-1 rounded-full text-xs">
+                    Activo
+                  </span>
+                </div>
+                <p class="text-sm text-slate-600 dark:text-slate-400 font-medium"><%= truck.brand %> <%= truck.model %></p>
+                <div class="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400 mt-1">
+                  <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                  </svg>
+                  <span>Último mantenimiento: <%= Calendar.strftime(truck.last_maintenance || DateTime.utc_now(), "%d/%m/%Y") %></span>
+                </div>
+              </div>
+              <a href={"/trucks/#{truck.id}"} class="border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors p-2 rounded-lg">
+                <svg class="h-4 w-4 text-slate-600 dark:text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                </svg>
+              </a>
             </div>
           <% end %>
         </div>
       </div>
-      <!-- Gráfica de Estados -->
+    </div>
+
+    <!-- Recent Tickets -->
+    <div class="border-0 shadow-lg hover:shadow-xl transition-all duration-300 bg-card dark:bg-card rounded-xl">
+      <div class="bg-gradient-to-r from-slate-50 to-purple-50 dark:from-slate-800/50 dark:to-purple-900/20 rounded-t-xl p-6">
+        <div class="flex items-center justify-between">
       <div>
-        <h3 class="text-base font-semibold text-gray-700 dark:text-gray-200 text-center mb-2">Distribución de Estados</h3>
-        <div class="flex items-end h-40 space-x-2">
-          <%= for {status, count} <- @status_distribution_data do %>
-            <div class="flex flex-col items-center flex-1">
-              <div class={"w-7 rounded-t-lg shadow-md " <>
-                case status do
-                  "check_out" -> "bg-gradient-to-t from-green-400 to-green-600 dark:from-green-700 dark:to-green-400"
-                  "completed" -> "bg-gradient-to-t from-blue-400 to-blue-600 dark:from-blue-700 dark:to-blue-400"
-                  "pending" -> "bg-gradient-to-t from-yellow-400 to-yellow-600 dark:from-yellow-700 dark:to-yellow-400"
-                  _ -> "bg-gradient-to-t from-gray-400 to-gray-600 dark:from-gray-700 dark:to-gray-400"
-                end
-              }
-              style={"height: #{count * 20 + 8}px"}>
+            <div class="text-lg text-slate-900 dark:text-slate-100 font-semibold">Tickets Recientes</div>
+            <div class="text-slate-600 dark:text-slate-400">Últimos reportes</div>
+          </div>
+          <a href="/checkin-wizard" class="gradient-primary text-white border-0 shadow-md hover:shadow-lg transition-all duration-200 px-3 py-2 rounded-lg">
+            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+            </svg>
+          </a>
+        </div>
+      </div>
+      <div class="p-6">
+        <div class="space-y-4">
+          <%= for ticket <- @dashboard_stats.recent_tickets do %>
+            <div class="space-y-3 p-4 border border-slate-200/60 dark:border-slate-700/60 rounded-xl hover:shadow-md transition-all duration-200 hover-lift bg-white dark:bg-slate-800/50">
+              <div class="flex items-center justify-between">
+                <span class="font-semibold text-slate-900 dark:text-slate-100 text-sm"><%= ticket.id %></span>
+                <span class="bg-yellow-100 dark:bg-yellow-900/50 text-yellow-700 dark:text-yellow-300 border-yellow-200 dark:border-yellow-800 px-2 py-1 rounded-full text-xs">
+                  Pendiente
+                </span>
               </div>
-              <span class="text-xs text-gray-500 mt-1"><%= status_label(status) %></span>
+              <p class="text-sm font-medium text-slate-800 dark:text-slate-200"><%= ticket.title %></p>
+              <div class="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+                <span>Camión: <span class="font-medium text-slate-700 dark:text-slate-300"><%= ticket.truck_license_plate %></span></span>
+                <span><%= Calendar.strftime(ticket.inserted_at, "%d/%m/%Y") %></span>
+              </div>
     </div>
           <% end %>
         </div>
@@ -303,59 +227,41 @@
     </div>
   </div>
 
-  <!-- Sección de Actividad Reciente -->
-  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 border border-gray-200 dark:border-gray-700">
-    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Actividad Reciente</h3>
-    <div class="space-y-4">
-      <%= for act <- @dashboard_recent_activities do %>
-      <div class="flex items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-          <div class={
-            case act.type do
-              :ticket -> "w-2 h-2 bg-green-500 rounded-full mr-3"
-              :lead -> "w-2 h-2 bg-blue-500 rounded-full mr-3"
-              :order -> "w-2 h-2 bg-purple-500 rounded-full mr-3"
-              :activity -> "w-2 h-2 bg-orange-500 rounded-full mr-3"
-              :feedback -> "w-2 h-2 bg-pink-500 rounded-full mr-3"
-              _ -> "w-2 h-2 bg-gray-400 rounded-full mr-3"
-            end
-          }></div>
-        <div class="flex-1">
-            <p class="text-sm font-medium text-gray-900 dark:text-white">
-              <%= case act.type do
-                :ticket -> "Nuevo ticket creado"
-                :lead -> "Nuevo lead creado"
-                :order -> "Nueva orden de producción"
-                :activity -> "Nueva actividad"
-                :feedback -> "Reporte de bug/feedback (" <> (act.status || "abierto") <> ")"
-                :feedback_comment -> "Nuevo comentario en bug"
-                _ -> "Actividad"
-              end %>
-            </p>
-            <%= if act.type == :feedback do %>
-              <a href={"/feedback#bug-" <> to_string(act.id)} class="text-xs text-pink-600 dark:text-pink-400 underline hover:font-bold transition">
-                <%= act.title %>
-                <%= if act.subtitle, do: " - " <> act.subtitle %>
-              </a>
-            <% else %>
-              <%= if act.type == :feedback_comment do %>
-                <a href={"/feedback#bug-" <> to_string(act.feedback_id)} class="text-xs text-pink-600 dark:text-pink-400 underline hover:font-bold transition">
-                  <%= act.title %>
-                  <%= if act.author, do: " por " <> act.author %>
-                  <%= if act.subtitle, do: ": " <> act.subtitle %>
-                </a>
-              <% else %>
-                <p class="text-xs text-gray-500 dark:text-gray-400">
-                  <%= act.title %>
-                  <%= if act.subtitle, do: " - " <> act.subtitle %>
-                </p>
-              <% end %>
-            <% end %>
+  <!-- Quick Actions -->
+  <div class="border-0 shadow-lg hover:shadow-xl transition-all duration-300 bg-card dark:bg-card rounded-xl">
+    <div class="bg-gradient-to-r from-slate-50 to-green-50 dark:from-slate-800/50 dark:to-green-900/20 rounded-t-xl p-6">
+      <div class="text-lg text-slate-900 dark:text-slate-100 font-semibold">Acciones Rápidas</div>
+      <div class="text-slate-600 dark:text-slate-400">Herramientas principales para gestión diaria</div>
+    </div>
+    <div class="p-6">
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <a href="/checkin-wizard" class="h-24 flex-col gap-3 gradient-primary text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover-lift rounded-xl flex items-center justify-center">
+          <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+          </svg>
+          <span class="font-medium">Nueva Evaluación</span>
+        </a>
+        <a href="/trucks" class="h-24 flex-col gap-3 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 hover:shadow-lg transition-all duration-300 hover-lift bg-white dark:bg-slate-800/50 rounded-xl flex items-center justify-center">
+          <svg class="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+          </svg>
+          <span class="font-medium text-slate-700 dark:text-slate-300">Registrar Camión</span>
+        </a>
+        <a href="/checkin-wizard" class="h-24 flex-col gap-3 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 hover:shadow-lg transition-all duration-300 hover-lift bg-white dark:bg-slate-800/50 rounded-xl flex items-center justify-center">
+          <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+          <span class="font-medium text-slate-700 dark:text-slate-300">Nuevo Mantenimiento</span>
+        </a>
+        <a href="/production-orders/new" class="h-24 flex-col gap-3 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-xl flex items-center justify-center transition-colors">
+          <svg class="h-6 w-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+          </svg>
+          <span class="font-medium text-slate-700 dark:text-slate-300">Nueva Orden</span>
+        </a>
         </div>
-          <span class="text-xs text-gray-400">
-            <%= human_relative_time(act.inserted_at) %>
-          </span>
         </div>
-      <% end %>
     </div>
   </div>
 <% end %>
@@ -365,10 +271,10 @@
     <div class="bg-white dark:bg-[#23272f] rounded-lg shadow-2xl w-full max-w-xs flex flex-col border border-gray-200 dark:border-[#2d323c] p-8 items-center">
       <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4">¿Qué deseas crear?</h3>
       <div class="flex flex-col gap-4 w-full">
-        <button phx-click="select_modal_type" phx-value-type="ticket" class="bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 rounded-lg flex items-center gap-2 justify-center">
+        <a href="/checkin-wizard" class="bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 rounded-lg flex items-center gap-2 justify-center">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536M9 13h3l6 6M3 21l6-6m0 0V9a3 3 0 013-3h3m-6 6l-6 6"/></svg>
           Nuevo Ticket de Mantenimiento
-        </button>
+        </a>
 
       </div>
       <button phx-click="close_modal" class="mt-6 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">Cancelar</button>

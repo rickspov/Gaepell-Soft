@@ -29,12 +29,14 @@
                 <span class={"ml-2 inline-flex px-2 py-1 text-xs font-semibold rounded-full #{case @selected_ticket.evaluation_type do
                   "collision" -> "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200"
                   "maintenance" -> "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+                  "warranty" -> "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
                   "other" -> "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200"
                   _ -> "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200"
                 end}"}>
                   <%= case @selected_ticket.evaluation_type do %>
                     <% "collision" -> %>Choque
                     <% "maintenance" -> %>Mantenimiento
+                    <% "warranty" -> %>Garantía
                     <% "other" -> %>Otro
                     <% _ -> %>Desconocido
                   <% end %>
@@ -602,6 +604,7 @@
                         class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white">
                   <option value="collision" selected={@editing_evaluation_ticket.evaluation_type == "collision"}>Evaluación de Choque</option>
                   <option value="maintenance" selected={@editing_evaluation_ticket.evaluation_type == "maintenance"}>Evaluación de Mantenimiento</option>
+                  <option value="warranty" selected={@editing_evaluation_ticket.evaluation_type == "warranty"}>Garantía</option>
                   <option value="other" selected={@editing_evaluation_ticket.evaluation_type == "other"}>Otro</option>
                 </select>
               </div>

@@ -42,6 +42,18 @@ defmodule EvaaCrmGaepell.MaintenanceTicket do
     field :estimated_repair_cost, :decimal
     field :insurance_claim_number, :string
     field :insurance_company, :string
+    field :warranty_details, :string
+    field :progress, :integer, default: 0
+
+    # Campos de check-out (temporalmente comentados hasta que se resuelva el problema de migración)
+    # field :checkout_driver_cedula, :string
+    # field :checkout_driver_name, :string
+    # field :checkout_details, :string
+    # field :checkout_photos, {:array, :string}, default: []
+    # field :checkout_signature, :string
+    # field :checkout_signature_url, :string
+    # field :checkout_date, :utc_datetime
+    # field :checkout_notes, :string
 
     belongs_to :business, EvaaCrmGaepell.Business
     belongs_to :quotation, EvaaCrmGaepell.Quotation
@@ -54,7 +66,7 @@ defmodule EvaaCrmGaepell.MaintenanceTicket do
 
   def changeset(ticket, attrs) do
     ticket
-    |> cast(attrs, [:title, :description, :priority, :truck_id, :specialist_id, :entry_date, :mileage, :fuel_level, :visible_damage, :damage_photos, :responsible_signature, :signature_url, :status, :exit_date, :exit_notes, :business_id, :color, :deliverer_name, :document_type, :document_number, :deliverer_phone, :company_name, :position, :employee_number, :authorization_type, :special_conditions, :entry_type, :production_status, :quotation_id, :box_type, :estimated_delivery, :evaluation_type, :evaluation_notes, :estimated_repair_cost, :insurance_claim_number, :insurance_company])
+    |> cast(attrs, [:title, :description, :priority, :truck_id, :specialist_id, :entry_date, :mileage, :fuel_level, :visible_damage, :damage_photos, :responsible_signature, :signature_url, :status, :exit_date, :exit_notes, :business_id, :color, :deliverer_name, :document_type, :document_number, :deliverer_phone, :company_name, :position, :employee_number, :authorization_type, :special_conditions, :entry_type, :production_status, :quotation_id, :box_type, :estimated_delivery, :evaluation_type, :evaluation_notes, :estimated_repair_cost, :insurance_claim_number, :insurance_company, :warranty_details, :progress])
     |> validate_required([:title, :truck_id, :business_id])
     |> validate_inclusion(:priority, ["low", "medium", "high", "urgent"])
     |> validate_inclusion(:status, ["check_in", "in_workshop", "final_review", "car_wash", "check_out", "cancelled", "recepcion"])
@@ -62,7 +74,8 @@ defmodule EvaaCrmGaepell.MaintenanceTicket do
     |> validate_inclusion(:entry_type, ["maintenance", "production"])
     |> validate_inclusion(:production_status, ["pending_quote", "quoted", "approved", "in_production", "completed"])
     |> validate_inclusion(:box_type, ["plataforma", "caja_seca", "caja_refrigerada", "caja_termica", "caja_especializada", "otro"], allow_nil: true)
-    |> validate_inclusion(:evaluation_type, ["maintenance", "collision", "other"], allow_nil: true)
+    |> validate_inclusion(:evaluation_type, ["maintenance", "collision", "warranty", "other"], allow_nil: true)
+    |> validate_number(:progress, greater_than_or_equal_to: 0, less_than_or_equal_to: 100)
     |> foreign_key_constraint(:truck_id)
     |> foreign_key_constraint(:specialist_id)
     |> foreign_key_constraint(:business_id)
@@ -106,4 +119,17 @@ defmodule EvaaCrmGaepell.MaintenanceTicket do
         {:error, changeset}
     end
   end
+
+  # Funciones para mostrar labels de evaluation_type
+  def evaluation_type_label("collision"), do: "Evaluación de Choque"
+  def evaluation_type_label("maintenance"), do: "Evaluación de Mantenimiento"
+  def evaluation_type_label("warranty"), do: "Garantía"
+  def evaluation_type_label("other"), do: "Otro"
+  def evaluation_type_label(_), do: "Desconocido"
+
+  def evaluation_type_color("collision"), do: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+  def evaluation_type_color("maintenance"), do: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+  def evaluation_type_color("warranty"), do: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+  def evaluation_type_color("other"), do: "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200"
+  def evaluation_type_color(_), do: "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200"
 end 

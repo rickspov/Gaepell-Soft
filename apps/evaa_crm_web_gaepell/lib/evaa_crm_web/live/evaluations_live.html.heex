@@ -1,0 +1,368 @@
+<div class="space-y-6">
+  <!-- Header -->
+  <div class="flex items-center justify-between">
+    <div>
+             <h1 class="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+         Tickets de Evaluación - ARCHIVO CORRECTO
+       </h1>
+      <p class="text-slate-600 dark:text-slate-400">Gestión de evaluaciones de daños y reportes de inspección</p>
+    </div>
+    <button phx-click="new_evaluation" class="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:shadow-lg transition-all">
+      <svg class="w-4 h-4 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+      </svg>
+      Nueva Evaluación
+    </button>
+  </div>
+
+  <!-- Filters -->
+  <div class="bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700">
+    <div class="p-6">
+      <h3 class="text-base font-semibold flex items-center gap-2 mb-4">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+        </svg>
+        Filtros y Búsqueda
+      </h3>
+      <div class="grid grid-cols-1 md:grid-cols-6 gap-4">
+        <div class="md:col-span-2">
+          <div class="relative">
+            <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+            </svg>
+            <input type="text" 
+                   placeholder="Buscar por ID, título, camión o inspector..." 
+                   value="<%= @search %>"
+                   phx-keyup="search"
+                   class="w-full pl-10 pr-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg dark:bg-slate-700 dark:text-white">
+          </div>
+        </div>
+        
+        <select phx-change="filter_status" class="p-2 border border-slate-300 dark:border-slate-600 rounded-lg dark:bg-slate-700 dark:text-white">
+          <option value="">Estado</option>
+          <option value="pending">Pendiente</option>
+          <option value="in-progress">En Progreso</option>
+          <option value="completed">Completada</option>
+          <option value="cancelled">Cancelada</option>
+        </select>
+
+        <select phx-change="filter_severity" class="p-2 border border-slate-300 dark:border-slate-600 rounded-lg dark:bg-slate-700 dark:text-white">
+          <option value="">Severidad</option>
+          <option value="low">Baja</option>
+          <option value="medium">Media</option>
+          <option value="high">Alta</option>
+          <option value="critical">Crítica</option>
+        </select>
+
+        <select phx-change="filter_type" class="p-2 border border-slate-300 dark:border-slate-600 rounded-lg dark:bg-slate-700 dark:text-white">
+          <option value="">Tipo</option>
+          <option value="garantia">Garantía</option>
+          <option value="colision">Colisión</option>
+          <option value="desgaste">Desgaste</option>
+          <option value="otro">Otro</option>
+        </select>
+
+        <select phx-change="filter_insurance" class="p-2 border border-slate-300 dark:border-slate-600 rounded-lg dark:bg-slate-700 dark:text-white">
+          <option value="">Seguro</option>
+          <option value="with">Con Seguro</option>
+          <option value="without">Sin Seguro</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 hover:shadow-xl transition-shadow">
+      <div class="p-4">
+        <div class="text-center">
+          <div class="flex items-center justify-center mb-2">
+            <svg class="h-5 w-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+          </div>
+          <p class="text-2xl font-bold text-yellow-600">
+            <%= @stats.pending || 0 %>
+          </p>
+          <p class="text-sm text-slate-500 dark:text-slate-400">Pendientes</p>
+        </div>
+      </div>
+    </div>
+    
+    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 hover:shadow-xl transition-shadow">
+      <div class="p-4">
+        <div class="text-center">
+          <div class="flex items-center justify-center mb-2">
+            <svg class="h-5 w-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+            </svg>
+          </div>
+          <p class="text-2xl font-bold text-blue-600">
+            <%= @stats.in_progress || 0 %>
+          </p>
+          <p class="text-sm text-slate-500 dark:text-slate-400">En Progreso</p>
+        </div>
+      </div>
+    </div>
+    
+    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 hover:shadow-xl transition-shadow">
+      <div class="p-4">
+        <div class="text-center">
+          <div class="flex items-center justify-center mb-2">
+            <svg class="h-5 w-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+            </svg>
+          </div>
+          <p class="text-2xl font-bold text-green-600">
+            <%= @stats.completed || 0 %>
+          </p>
+          <p class="text-sm text-slate-500 dark:text-slate-400">Completadas</p>
+        </div>
+      </div>
+    </div>
+    
+    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 hover:shadow-xl transition-shadow">
+      <div class="p-4">
+        <div class="text-center">
+          <div class="flex items-center justify-center mb-2">
+            <svg class="h-5 w-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+            </svg>
+          </div>
+          <p class="text-2xl font-bold text-red-600">
+            <%= @stats.high_priority || 0 %>
+          </p>
+          <p class="text-sm text-slate-500 dark:text-slate-400">Alta Prioridad</p>
+        </div>
+      </div>
+    </div>
+    
+    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 hover:shadow-xl transition-shadow">
+      <div class="p-4">
+        <div class="text-center">
+          <div class="flex items-center justify-center mb-2">
+            <svg class="h-5 w-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+            </svg>
+          </div>
+          <p class="text-2xl font-bold"><%= length(@evaluations) %></p>
+          <p class="text-sm text-slate-500 dark:text-slate-400">Total Filtrados</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Evaluations Table -->
+  <div class="bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700">
+    <div class="p-6">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h3 class="text-lg font-semibold">Lista de Evaluaciones</h3>
+          <p class="text-sm text-slate-500 dark:text-slate-400">
+            Mostrando <%= length(@evaluations) %> evaluaciones
+          </p>
+        </div>
+        <button class="px-3 py-1 border border-slate-300 dark:border-slate-600 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors text-sm">
+          <svg class="w-4 h-4 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+          </svg>
+          Exportar
+        </button>
+      </div>
+      
+      <div class="overflow-x-auto">
+        <table class="w-full">
+          <thead>
+            <tr class="border-b border-slate-200 dark:border-slate-600">
+              <th class="text-left py-3 px-4 font-medium">ID</th>
+              <th class="text-left py-3 px-4 font-medium">Título</th>
+              <th class="text-left py-3 px-4 font-medium">Camión</th>
+              <th class="text-left py-3 px-4 font-medium">Tipo</th>
+              <th class="text-left py-3 px-4 font-medium">Estado</th>
+              <th class="text-left py-3 px-4 font-medium">Severidad</th>
+              <th class="text-left py-3 px-4 font-medium">Asignado a</th>
+              <th class="text-left py-3 px-4 font-medium">Fecha Evaluación</th>
+              <th class="text-left py-3 px-4 font-medium">Costo Est.</th>
+              <th class="text-left py-3 px-4 font-medium">Fotos</th>
+              <th class="text-left py-3 px-4 font-medium">Seguro</th>
+              <th class="text-left py-3 px-4 font-medium">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <%= for evaluation <- @evaluations do %>
+              <tr class="border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50">
+                <td class="py-3 px-4 font-medium"><%= evaluation.id %></td>
+                <td class="py-3 px-4">
+                  <div>
+                    <p class="font-medium"><%= evaluation.title %></p>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">
+                      Por: <%= evaluation.evaluated_by || "No especificado" %>
+                    </p>
+                  </div>
+                </td>
+                <td class="py-3 px-4">
+                  <div class="flex items-center gap-2">
+                    <svg class="h-4 w-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3a4 4 0 118 0v4m-4 6v6m-4-6h8m-8 6h8"/>
+                    </svg>
+                    <div>
+                      <%= if evaluation.truck do %>
+                        <p class="font-medium"><%= evaluation.truck.license_plate %></p>
+                        <p class="text-xs text-slate-500 dark:text-slate-400"><%= evaluation.truck.brand %> <%= evaluation.truck.model %></p>
+                      <% else %>
+                        <p class="font-medium text-slate-500">Sin camión</p>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">No asignado</p>
+                      <% end %>
+                    </div>
+                  </div>
+                </td>
+                <td class="py-3 px-4">
+                  <span class="px-2 py-1 text-xs font-medium rounded-full border border-slate-300 dark:border-slate-600">
+                    <%= get_evaluation_type_label(evaluation.evaluation_type) %>
+                  </span>
+                </td>
+                <td class="py-3 px-4">
+                  <span class="px-2 py-1 text-xs font-medium rounded-full <%= get_status_color(evaluation.status) %>">
+                    <%= get_status_label(evaluation.status) %>
+                  </span>
+                </td>
+                <td class="py-3 px-4">
+                  <span class="px-2 py-1 text-xs font-medium rounded-full <%= get_severity_color(evaluation.severity_level) %>">
+                    <%= get_severity_label(evaluation.severity_level) %>
+                  </span>
+                </td>
+                <td class="py-3 px-4">
+                  <div class="flex items-center gap-2">
+                    <svg class="h-4 w-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                    </svg>
+                    <span class="text-sm">
+                      <%= if evaluation.specialist && evaluation.specialist.__struct__ != Ecto.Association.NotLoaded do %>
+                        <%= evaluation.specialist.name || "No especificado" %>
+                      <% else %>
+                        No asignado
+                      <% end %>
+                    </span>
+                  </div>
+                </td>
+                <td class="py-3 px-4">
+                  <div class="flex items-center gap-2">
+                    <svg class="h-4 w-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3a4 4 0 118 0v4m-4 6v6m-4-6h8m-8 6h8"/>
+                    </svg>
+                    <span class="text-sm">
+                      <%= if evaluation.evaluation_date do %>
+                        <%= Calendar.strftime(evaluation.evaluation_date, "%d/%m/%Y") %>
+                      <% else %>
+                        No programada
+                      <% end %>
+                    </span>
+                  </div>
+                </td>
+                <td class="py-3 px-4">
+                  <div class="flex items-center gap-1">
+                    <svg class="h-4 w-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"/>
+                    </svg>
+                    <span class="font-medium">
+                      $<%= evaluation.estimated_cost || 0 %>
+                    </span>
+                  </div>
+                </td>
+                <td class="py-3 px-4">
+                  <div class="flex items-center gap-1">
+                    <svg class="h-4 w-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                    <span class="text-sm"><%= length(evaluation.photos || []) %></span>
+                  </div>
+                </td>
+                <td class="py-3 px-4">
+                  <%= if evaluation.has_insurance do %>
+                    <div class="flex items-center gap-1">
+                      <svg class="h-4 w-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                      </svg>
+                      <span class="text-xs text-green-600"><%= evaluation.insurance_case %></span>
+                    </div>
+                  <% else %>
+                    <span class="text-xs text-slate-500 dark:text-slate-400">Sin seguro</span>
+                  <% end %>
+                </td>
+                <td class="py-3 px-4">
+                  <div class="flex items-center gap-1">
+                    <button phx-click="view_evaluation" phx-value-id="<%= evaluation.id %>" class="text-blue-600 hover:text-blue-900">
+                      Ver
+                    </button>
+                    |
+                    <button phx-click="edit_evaluation" phx-value-id="<%= evaluation.id %>" class="text-green-600 hover:text-green-900">
+                      Editar
+                    </button>
+                    |
+                    <button phx-click="convert_to_maintenance" phx-value-id="<%= evaluation.id %>" class="text-orange-600 hover:text-orange-900">
+                      Convertir
+                    </button>
+                    |
+                    <button phx-click="show_delete_confirm" phx-value-id="<%= evaluation.id %>" class="text-red-600 hover:text-red-900">
+                      Eliminar
+                    </button>
+                    |
+                    <button class="bg-purple-500 text-white px-2 py-1 rounded text-xs">
+                      TEST
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+
+      <%= if length(@evaluations) == 0 do %>
+        <div class="text-center py-8">
+          <svg class="h-8 w-8 text-slate-500 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+          </svg>
+          <p class="text-slate-500 dark:text-slate-400">No se encontraron evaluaciones que coincidan con los filtros.</p>
+        </div>
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Delete Confirmation Modal -->
+  <%= if @show_delete_confirm do %>
+    <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]" phx-click="hide_delete_confirm" phx-window-keydown="hide_delete_confirm" phx-key="escape">
+      <div class="bg-white dark:bg-slate-800 rounded-lg shadow-xl max-w-md w-full mx-4 p-6" phx-click="ignore">
+        <div class="flex items-center mb-4">
+          <div class="flex-shrink-0">
+            <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+            </svg>
+          </div>
+          <div class="ml-3">
+            <h3 class="text-lg font-medium text-slate-900 dark:text-white">Confirmar Eliminación</h3>
+          </div>
+        </div>
+        <div class="mt-2">
+          <p class="text-sm text-slate-500 dark:text-slate-400">
+            ¿Estás seguro de que quieres eliminar la evaluación <strong class="text-slate-900 dark:text-white">"<%= @delete_target.title %>"</strong>?
+          </p>
+          <p class="text-xs text-red-600 dark:text-red-400 mt-2">
+            Esta acción no se puede deshacer.
+          </p>
+        </div>
+        <div class="mt-6 flex justify-end space-x-3">
+          <button phx-click="hide_delete_confirm" 
+                  class="px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-md text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+            Cancelar
+          </button>
+          <button phx-click="confirm_delete" 
+                  class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 transition-colors">
+            Eliminar
+          </button>
+        </div>
+      </div>
+    </div>
+  <% end %>
+</div>

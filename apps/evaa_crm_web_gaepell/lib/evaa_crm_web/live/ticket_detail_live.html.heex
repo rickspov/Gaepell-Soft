@@ -1,0 +1,1601 @@
+<%= if @ticket do %>
+  <div class="space-y-4 sm:space-y-6">
+    <!-- Header -->
+    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700">
+      <div class="p-4 sm:p-6">
+        <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+          <div class="flex items-start gap-3 sm:gap-4">
+            <button phx-click="back" class="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+              </svg>
+            </button>
+            <div class="flex-1">
+              <div class="flex flex-wrap items-center gap-2 sm:gap-3 mb-2">
+                <span class="text-xl sm:text-2xl"><%= get_type_icon(@ticket_type) %></span>
+                <h1 class="text-xl sm:text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                  <%= @ticket.id %>
+                </h1>
+              </div>
+              <h2 class="text-lg sm:text-xl mb-2"><%= @ticket.title %></h2>
+              <p class="text-sm text-slate-500 dark:text-slate-400">
+                Check-in: <%= Calendar.strftime(@ticket.inserted_at, "%d/%m/%Y %H:%M") %>
+              </p>
+            </div>
+          </div>
+          <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+            <button phx-click="show_edit_modal" class="px-3 sm:px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors text-sm sm:text-base">
+              <svg class="w-4 h-4 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+              </svg>
+              Editar
+            </button>
+            <%= if @ticket_type == "evaluation" do %>
+              <button phx-click="show_convert_modal" class="px-3 sm:px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:shadow-lg transition-all text-sm sm:text-base">
+                <svg class="w-4 h-4 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"/>
+                </svg>
+                Convertir
+              </button>
+            <% else %>
+              <button class="px-3 sm:px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:shadow-lg transition-all text-sm sm:text-base">
+                <svg class="w-4 h-4 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                Completar
+              </button>
+            <% end %>
+            <%# Temporarily commented out until migration issue is resolved %>
+            <%#= if @ticket.checkout_date == nil do %>
+            <%#  <button phx-click="show_checkout_modal" class="px-3 sm:px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:shadow-lg transition-all text-sm sm:text-base"> %>
+            <%#    <svg class="w-4 h-4 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"> %>
+            <%#      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/> %>
+            <%#    </svg> %>
+            <%#    Check-out %>
+            <%#  </button> %>
+            <%# end %>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-4 sm:gap-6">
+      <!-- Main Content -->
+      <div class="xl:col-span-2 space-y-4 sm:space-y-6">
+        
+        <!-- Truck Information -->
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 hover:shadow-xl transition-shadow">
+          <div class="p-4 sm:p-6">
+            <h3 class="text-base sm:text-lg font-semibold flex items-center gap-2 mb-3 sm:mb-4">
+              <svg class="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3a4 4 0 118 0v4m-4 6v6m-4-6h8m-8 6h8"/>
+              </svg>
+              Información del Vehículo
+            </h3>
+            <div class="flex flex-col sm:flex-row sm:items-start gap-4">
+              <img src={@truck.profile_photo || "/images/truck-placeholder.jpg"} 
+                   alt={@truck.model} 
+                   class="h-16 w-16 sm:h-20 sm:w-20 rounded-xl object-cover border-2 border-slate-200 dark:border-slate-600 shadow-md mx-auto sm:mx-0">
+              <div class="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                <div>
+                  <p class="text-sm text-slate-500 dark:text-slate-400">Placa</p>
+                  <p class="font-semibold"><%= @truck.license_plate %></p>
+                </div>
+                <div>
+                  <p class="text-sm text-slate-500 dark:text-slate-400">Modelo</p>
+                  <p class="font-semibold"><%= @truck.brand %> <%= @truck.model %></p>
+                </div>
+                <div>
+                  <p class="text-sm text-slate-500 dark:text-slate-400">Propietario</p>
+                  <p class="font-semibold"><%= if @truck.owner && @truck.owner != "", do: @truck.owner, else: "No especificado" %></p>
+                </div>
+                <div>
+                  <p class="text-sm text-slate-500 dark:text-slate-400">Ficha</p>
+                  <p class="font-semibold"><%= if @truck.ficha, do: @truck.ficha, else: "N/A" %></p>
+                </div>
+              </div>
+              <button phx-click="navigate_to_truck" class="px-3 py-1 border border-slate-300 dark:border-slate-600 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors text-sm">
+                Ver Perfil
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Progress & Details (for maintenance) -->
+        <%= if @ticket_type == "maintenance" do %>
+          <div class="bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 hover:shadow-xl transition-shadow">
+            <div class="p-6">
+              <h3 class="text-lg font-semibold flex items-center gap-2 mb-4">
+                <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                </svg>
+                Progreso y Detalles
+              </h3>
+              <div class="space-y-6">
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div class="text-center p-4 border rounded-lg">
+                    <svg class="h-6 w-6 text-blue-600 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <p class="text-2xl font-bold"><%= get_actual_hours(@ticket, @ticket_type) %>h</p>
+                    <p class="text-sm text-slate-500 dark:text-slate-400">de <%= get_estimated_hours(@ticket, @ticket_type) %>h</p>
+                  </div>
+                  <div class="text-center p-4 border rounded-lg">
+                    <svg class="h-6 w-6 text-green-600 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"/>
+                    </svg>
+                    <p class="text-2xl font-bold">$<%= get_actual_cost(@ticket, @ticket_type) %></p>
+                    <p class="text-sm text-slate-500 dark:text-slate-400">de $<%= get_estimated_cost(@ticket, @ticket_type) %></p>
+                  </div>
+                  <div class="text-center p-4 border rounded-lg">
+                    <svg class="h-6 w-6 text-blue-600 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+                    </svg>
+                    <p class="text-2xl font-bold"><%= get_progress(@ticket, @ticket_type) %>%</p>
+                    <p class="text-sm text-slate-500 dark:text-slate-400">Completado</p>
+                  </div>
+                  <div class="text-center p-4 border rounded-lg">
+                    <svg class="h-6 w-6 text-orange-600 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                    <p class="text-2xl font-bold">0</p>
+                    <p class="text-sm text-slate-500 dark:text-slate-400">Componentes</p>
+                  </div>
+                </div>
+
+                <!-- Interactive Progress Bar -->
+                <div class="space-y-4">
+                  <div class="flex items-center justify-between">
+                    <h4 class="font-semibold">Control de Progreso</h4>
+                    <span class="px-2 py-1 text-xs font-medium rounded-full border border-slate-300 dark:border-slate-600">
+                      <%= get_progress(@ticket, @ticket_type) %>% completado
+                    </span>
+                  </div>
+                  
+                  <div class="space-y-3">
+                    <div class="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-3">
+                      <div class="bg-gradient-to-r from-blue-600 to-purple-600 h-3 rounded-full transition-all duration-300" 
+                           style={"width: #{get_progress(@ticket, @ticket_type)}%"}></div>
+                    </div>
+                    <div class="space-y-2">
+                      <div class="flex items-center justify-between text-sm text-slate-500 dark:text-slate-400">
+                        <span>0%</span>
+                        <span>Ajustar progreso</span>
+                        <span>100%</span>
+                      </div>
+                      <input type="range" 
+                             id="progress-slider"
+                             min="0" 
+                             max="100" 
+                             step="5" 
+                             value={get_progress(@ticket, @ticket_type)}
+                             phx-hook="ProgressSlider"
+                             data-progress={get_progress(@ticket, @ticket_type)}
+                             class="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer slider">
+                    </div>
+                  </div>
+                  
+                  <div class="flex gap-2">
+                    <button phx-click="update_progress" phx-value-progress="0" 
+                            class="px-3 py-1 border border-slate-300 dark:border-slate-600 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors text-sm">
+                      Reiniciar
+                    </button>
+                    <button phx-click="update_progress" phx-value-progress="25" 
+                            class="px-3 py-1 border border-slate-300 dark:border-slate-600 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors text-sm">
+                      25%
+                    </button>
+                    <button phx-click="update_progress" phx-value-progress="50" 
+                            class="px-3 py-1 border border-slate-300 dark:border-slate-600 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors text-sm">
+                      50%
+                    </button>
+                    <button phx-click="update_progress" phx-value-progress="75" 
+                            class="px-3 py-1 border border-slate-300 dark:border-slate-600 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors text-sm">
+                      75%
+                    </button>
+                    <button phx-click="update_progress" phx-value-progress="100" 
+                            class="px-3 py-1 border border-green-500 text-green-600 rounded-lg hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors text-sm">
+                      Completar
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        <% end %>
+
+                 <!-- Damage Information (for evaluation) -->
+         <%= if @ticket_type == "evaluation" do %>
+           <div class="bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 hover:shadow-xl transition-shadow">
+             <div class="p-6">
+               <!-- DEBUG INFO -->
+               <!-- 
+               Ticket Type: <%= @ticket_type %>
+               Damage Areas: <%= inspect(get_damage_areas(@ticket, @ticket_type)) %>
+               Description: <%= inspect(@ticket.description) %>
+               Severity Level: <%= inspect(get_severity_level(@ticket, @ticket_type)) %>
+               Estimated Cost: <%= inspect(get_estimated_cost(@ticket, @ticket_type)) %>
+               Evaluation Type: <%= inspect(get_evaluation_type(@ticket, @ticket_type)) %>
+               Notes: <%= inspect(get_notes(@ticket, @ticket_type)) %>
+               -->
+               <div class="flex items-center justify-between mb-4">
+                 <h3 class="text-lg font-semibold flex items-center gap-2">
+                   <svg class="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+                   </svg>
+                   Información de Daños
+                 </h3>
+                 <button phx-click="show_damage_info_edit_modal" class="px-3 py-1 border border-slate-300 dark:border-slate-600 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors text-sm flex items-center gap-2">
+                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                   </svg>
+                   Editar
+                 </button>
+               </div>
+               <div class="space-y-6">
+                 <!-- Estimated Cost -->
+                 <%= if get_estimated_cost(@ticket, @ticket_type) && get_estimated_cost(@ticket, @ticket_type) > 0 do %>
+                   <div>
+                     <p class="text-sm text-slate-500 dark:text-slate-400">Costo Estimado</p>
+                                            <p class="text-2xl font-bold text-orange-600">$<%= get_estimated_cost(@ticket, @ticket_type) %></p>
+                   </div>
+                 <% end %>
+                 
+                 <!-- Damage Areas -->
+                 <div>
+                   <p class="text-sm text-slate-500 dark:text-slate-400 mb-2">Tipos de Daño</p>
+                   <div class="flex flex-wrap gap-2">
+                                      <%= if length(get_damage_areas(@ticket, @ticket_type)) > 0 do %>
+                   <%= for damage <- get_damage_areas(@ticket, @ticket_type) do %>
+                         <span class="px-3 py-1 text-sm font-medium rounded-full bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300 border border-orange-200 dark:border-orange-700">
+                           <%= String.downcase(String.replace(damage, "_", " ")) %>
+                         </span>
+                       <% end %>
+                     <% else %>
+                       <span class="px-3 py-1 text-sm text-slate-500 dark:text-slate-400 italic">No se especificaron áreas de daño</span>
+                     <% end %>
+                   </div>
+                 </div>
+                 
+                 <!-- Basic Damage Info -->
+                 <div class="grid grid-cols-2 gap-4">
+                   <div>
+                     <p class="text-sm text-slate-500 dark:text-slate-400">Tipo de Evaluación</p>
+                     <p class="text-lg font-semibold text-orange-600">
+                       <%= case get_evaluation_type(@ticket, @ticket_type) do %>
+                         <% "garantia" -> %>Garantía
+                         <% "colision" -> %>Colisión
+                         <% "desgaste" -> %>Desgaste
+                         <% "otro" -> %>Otro
+                         <% _ -> %>No especificado
+                       <% end %>
+                     </p>
+                   </div>
+                   <div>
+                     <p class="text-sm text-slate-500 dark:text-slate-400">Nivel de Severidad</p>
+                     <p class="text-lg font-semibold">
+                       <%= case get_severity_level(@ticket, @ticket_type) do %>
+                         <% "low" -> %>Bajo
+                         <% "medium" -> %>Medio
+                         <% "high" -> %>Alto
+                         <% "critical" -> %>Crítico
+                         <% _ -> %>No especificado
+                       <% end %>
+                     </p>
+                   </div>
+                 </div>
+                 
+                 <!-- Description -->
+                 <%= if @ticket.description && @ticket.description != "" && @ticket.description != "Sin descripción del daño" && !String.contains?(@ticket.description, "**Información del Vehículo:**") do %>
+                   <div>
+                     <p class="text-sm text-slate-500 dark:text-slate-400 mb-2">Descripción del Daño</p>
+                     <div class="p-4 bg-slate-50 dark:bg-slate-700 rounded-lg border border-slate-200 dark:border-slate-600">
+                       <p class="text-sm text-slate-900 dark:text-slate-100 whitespace-pre-wrap"><%= @ticket.description %></p>
+                     </div>
+                   </div>
+                 <% end %>
+                 
+                 <!-- Evaluation Details -->
+                 <%= if @ticket_type == "evaluation" && get_notes(@ticket, @ticket_type) && get_notes(@ticket, @ticket_type) != "" do %>
+                   <div>
+                     <p class="text-sm text-slate-500 dark:text-slate-400 mb-2">
+                       <%= case get_evaluation_type(@ticket, @ticket_type) do %>
+                         <% "garantia" -> %>Detalles de Garantía
+                         <% "colision" -> %>Detalles de Colisión
+                         <% "desgaste" -> %>Detalles de Desgaste
+                         <% "otro" -> %>Detalles Específicos
+                         <% _ -> %>Detalles Adicionales
+                       <% end %>
+                     </p>
+                     <div class="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-700">
+                       <p class="text-sm text-slate-900 dark:text-slate-100 whitespace-pre-wrap"><%= get_notes(@ticket, @ticket_type) %></p>
+                     </div>
+                   </div>
+                 <% end %>
+                 
+                 <!-- Notes -->
+                 <%= if get_notes(@ticket, @ticket_type) && get_notes(@ticket, @ticket_type) != "" do %>
+                   <div>
+                     <p class="text-sm text-slate-500 dark:text-slate-400 mb-2">Notas Adicionales</p>
+                     <div class="p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-700">
+                       <p class="text-sm text-slate-900 dark:text-slate-100 whitespace-pre-wrap"><%= get_notes(@ticket, @ticket_type) %></p>
+                     </div>
+                   </div>
+                 <% end %>
+               </div>
+             </div>
+           </div>
+         <% end %>
+
+        <!-- Maintenance Form Details -->
+        <%= if @ticket_type == "maintenance" do %>
+          <div class="bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 hover:shadow-xl transition-shadow">
+            <div class="p-6">
+              <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold flex items-center gap-2">
+                  <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                  </svg>
+                  Detalles del Formulario de Mantenimiento
+                </h3>
+                <button phx-click="show_maintenance_form_edit_modal" class="px-3 py-1 border border-slate-300 dark:border-slate-600 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors text-sm flex items-center gap-2">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                  </svg>
+                  Editar
+                </button>
+              </div>
+              <div class="space-y-6">
+                <!-- Maintenance Type and Priority -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <p class="text-sm text-slate-500 dark:text-slate-400 mb-2">Tipo de Mantenimiento</p>
+                    <div class="flex items-center gap-2">
+                      <span class="px-3 py-1 text-sm font-medium rounded-full bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 border border-green-200 dark:border-green-700">
+                        <%= get_maintenance_type_label(get_maintenance_specific_type(@ticket, @ticket_type)) %>
+                      </span>
+                    </div>
+                  </div>
+                  <div>
+                    <p class="text-sm text-slate-500 dark:text-slate-400 mb-2">Prioridad</p>
+                    <div class="flex items-center gap-2">
+                      <span class={"px-3 py-1 text-sm font-medium rounded-full border #{get_priority_color(get_severity_level(@ticket, @ticket_type))}"}>
+                        <%= get_priority_label(get_severity_level(@ticket, @ticket_type)) %>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Maintenance Areas -->
+                <div>
+                  <p class="text-sm text-slate-500 dark:text-slate-400 mb-2">Áreas a Mantener</p>
+                  <div class="flex flex-wrap gap-2">
+                    <%= if length(get_damage_areas(@ticket, @ticket_type)) > 0 do %>
+                      <%= for area <- get_damage_areas(@ticket, @ticket_type) do %>
+                        <span class="px-3 py-1 text-sm font-medium rounded-full bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 border border-green-200 dark:border-green-700">
+                          <%= area %>
+                        </span>
+                      <% end %>
+                    <% else %>
+                      <span class="px-3 py-1 text-sm text-slate-500 dark:text-slate-400 italic">No se especificaron áreas</span>
+                    <% end %>
+                  </div>
+                </div>
+
+                <!-- Driver Information -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <p class="text-sm text-slate-500 dark:text-slate-400 mb-2">Entregado por</p>
+                    <p class="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                      <%= get_evaluated_by(@ticket, @ticket_type) %>
+                    </p>
+                  </div>
+                  <div>
+                    <p class="text-sm text-slate-500 dark:text-slate-400 mb-2">Cédula del Conductor</p>
+                    <p class="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                      <%= get_driver_cedula(@ticket, @ticket_type) %>
+                    </p>
+                  </div>
+                </div>
+
+                <!-- Vehicle Information -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div>
+                    <p class="text-sm text-slate-500 dark:text-slate-400 mb-2">Kilometraje</p>
+                    <p class="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                      <%= if @ticket.mileage, do: @ticket.mileage, else: "No especificado" %>
+                    </p>
+                  </div>
+                  <div>
+                    <p class="text-sm text-slate-500 dark:text-slate-400 mb-2">Nivel de Combustible</p>
+                    <p class="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                      <%= case @ticket.fuel_level do %>
+                        <% "empty" -> %>Vacío
+                        <% "quarter" -> %>1/4
+                        <% "half" -> %>1/2
+                        <% "three_quarters" -> %>3/4
+                        <% "full" -> %>Lleno
+                        <% _ -> %>No especificado
+                      <% end %>
+                    </p>
+                  </div>
+                  <div>
+                    <p class="text-sm text-slate-500 dark:text-slate-400 mb-2">Costo Estimado</p>
+                    <p class="text-lg font-semibold text-orange-600">
+                      <%= if get_estimated_cost(@ticket, @ticket_type) && get_estimated_cost(@ticket, @ticket_type) > 0 do %>
+                        $<%= get_estimated_cost(@ticket, @ticket_type) %>
+                      <% else %>
+                        No especificado
+                      <% end %>
+                    </p>
+                  </div>
+                </div>
+
+                <!-- Description -->
+                <%= if @ticket.description && @ticket.description != "" do %>
+                  <div>
+                    <p class="text-sm text-slate-500 dark:text-slate-400 mb-2">Descripción del Problema</p>
+                    <div class="p-4 bg-slate-50 dark:bg-slate-700 rounded-lg border border-slate-200 dark:border-slate-600">
+                      <p class="text-sm text-slate-900 dark:text-slate-100 whitespace-pre-wrap"><%= @ticket.description %></p>
+                    </div>
+                  </div>
+                <% end %>
+
+                <!-- Visible Damage -->
+                <%= if @ticket.visible_damage && @ticket.visible_damage != "" do %>
+                  <div>
+                    <p class="text-sm text-slate-500 dark:text-slate-400 mb-2">Daños Visibles</p>
+                    <div class="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-700">
+                      <p class="text-sm text-slate-900 dark:text-slate-100 whitespace-pre-wrap"><%= @ticket.visible_damage %></p>
+                    </div>
+                  </div>
+                <% end %>
+              </div>
+            </div>
+          </div>
+        <% end %>
+
+        <!-- Attachments -->
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 hover:shadow-xl transition-shadow">
+          <div class="p-6">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-lg font-semibold flex items-center gap-2">
+                <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                </svg>
+                Archivos Adjuntos (<%= length(get_photos(@ticket, @ticket_type) || []) %>)
+              </h3>
+              <button phx-click="show_upload_modal" class="px-3 py-1 border border-slate-300 dark:border-slate-600 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors text-sm">
+                <svg class="w-4 h-4 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                </svg>
+                Subir Archivo
+              </button>
+            </div>
+            <div id="attachments-container" class="grid grid-cols-1 md:grid-cols-2 gap-4" phx-hook="ImageThumbnails">
+              <%= if length(get_photos(@ticket, @ticket_type) || []) == 0 do %>
+                <div class="col-span-full text-center py-8 text-slate-500 dark:text-slate-400">
+                  <svg class="h-12 w-12 mx-auto mb-4 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                  </svg>
+                  <p>No hay archivos adjuntos</p>
+                  <p class="text-sm">Haz clic en "Subir Archivo" para agregar documentos o fotos</p>
+                </div>
+              <% else %>
+                              <%= for {photo, index} <- Enum.with_index(get_photos(@ticket, @ticket_type) || []) do %>
+                <% file_info = try do
+                  parse_file_info(photo)
+                rescue
+                  e -> 
+                    IO.inspect(e, label: "[DEBUG] Error parsing file info")
+                    %{
+                      path: to_string(photo),
+                      description: nil,
+                      original_name: "archivo",
+                      size: nil,
+                      content_type: nil
+                    }
+                end %>
+                  <div class="flex items-center gap-3 p-3 border rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+                    <div class="relative flex-shrink-0">
+                      <%= if String.ends_with?(String.downcase(file_info.path), [".jpg", ".jpeg", ".png", ".gif"]) do %>
+                        <img src={file_info.path} 
+                             alt="Imagen" 
+                             class="h-12 w-12 rounded-lg object-cover bg-slate-100 dark:bg-slate-600"
+                             loading="lazy"
+                             onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                        <div class="h-12 w-12 bg-slate-100 dark:bg-slate-600 rounded-lg flex items-center justify-center" style="display: none;">
+                          <svg class="h-6 w-6 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                          </svg>
+                        </div>
+                        <svg class="absolute -top-1 -right-1 h-4 w-4 text-blue-600 bg-white dark:bg-slate-800 rounded-full p-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        </svg>
+                      <% else %>
+                        <div class="h-12 w-12 bg-slate-100 dark:bg-slate-600 rounded-lg flex items-center justify-center">
+                          <%= cond do %>
+                            <% String.ends_with?(String.downcase(file_info.path), ".pdf") -> %>
+                              <svg class="h-6 w-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                              </svg>
+                            <% String.ends_with?(String.downcase(file_info.path), [".doc", ".docx"]) -> %>
+                              <svg class="h-6 w-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                              </svg>
+                            <% String.ends_with?(String.downcase(file_info.path), [".xls", ".xlsx"]) -> %>
+                              <svg class="h-6 w-6 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"/>
+                              </svg>
+                            <% true -> %>
+                              <svg class="h-6 w-6 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                              </svg>
+                          <% end %>
+                        </div>
+                      <% end %>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                      <p class="font-medium truncate">
+                        <%= file_info.original_name %>
+                      </p>
+                      <%= if file_info.description && file_info.description != "" do %>
+                        <p class="text-sm text-blue-600 dark:text-blue-400 font-medium">
+                          <%= file_info.description %>
+                        </p>
+                      <% end %>
+                      <p class="text-sm text-slate-500 dark:text-slate-400">
+                        <%= cond do %>
+                          <% String.ends_with?(String.downcase(file_info.path), [".jpg", ".jpeg", ".png", ".gif"]) -> %>
+                            Imagen
+                          <% String.ends_with?(String.downcase(file_info.path), ".pdf") -> %>
+                            Documento PDF
+                          <% String.ends_with?(String.downcase(file_info.path), [".doc", ".docx"]) -> %>
+                            Documento Word
+                          <% String.ends_with?(String.downcase(file_info.path), [".xls", ".xlsx"]) -> %>
+                            Hoja de cálculo
+                          <% true -> %>
+                            Archivo
+                        <% end %>
+                      </p>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                      <button phx-click="show_edit_file_description_modal" 
+                              phx-value-index={index}
+                              phx-value-file-path={file_info.path}
+                              phx-value-current-description={file_info.description || ""}
+                              class="p-1 hover:bg-blue-100 dark:hover:bg-blue-900/20 rounded text-blue-500 hover:text-blue-700 dark:hover:text-blue-400" 
+                              title="Editar descripción">
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                        </svg>
+                      </button>
+                      <a href={file_info.path} target="_blank" class="p-1 hover:bg-slate-100 dark:hover:bg-slate-600 rounded" title="Ver archivo">
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                        </svg>
+                      </a>
+                      <a href={file_info.path} download class="p-1 hover:bg-slate-100 dark:hover:bg-slate-600 rounded" title="Descargar archivo">
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                      </a>
+                      <button phx-click="show_delete_modal" 
+                              phx-value-index={index} 
+                              class="p-1 hover:bg-red-100 dark:hover:bg-red-900/20 rounded text-red-500 hover:text-red-700 dark:hover:text-red-400" 
+                              title="Eliminar archivo">
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                <% end %>
+              <% end %>
+            </div>
+          </div>
+        </div>
+
+        <!-- Comments -->
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 hover:shadow-xl transition-shadow">
+          <div class="p-6">
+            <h3 class="text-lg font-semibold flex items-center gap-2 mb-4">
+              <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+              </svg>
+              Comentarios y Actualizaciones
+            </h3>
+            <div class="space-y-4">
+              <!-- Add comment -->
+              <div class="space-y-3">
+                <textarea placeholder="Agregar comentario o actualización..." 
+                          value={@new_comment}
+                          phx-keyup="comment_changed"
+                          class="w-full min-h-[80px] p-3 border border-slate-300 dark:border-slate-600 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-slate-700 dark:text-white"></textarea>
+                <div class="flex justify-end">
+                  <button phx-click="add_comment" 
+                          disabled={String.trim(@new_comment) == "" || @is_adding_comment}
+                          class="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                    <%= if @is_adding_comment do %>
+                      <svg class="animate-spin -ml-1 mr-3 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Agregando...
+                    <% else %>
+                      <svg class="w-4 h-4 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                      </svg>
+                      Agregar Comentario
+                    <% end %>
+                  </button>
+                </div>
+              </div>
+
+              <hr class="border-slate-200 dark:border-slate-600">
+
+              <!-- Comments list -->
+              <div class="space-y-4">
+                <%= for comment <- @comments do %>
+                  <div class="flex gap-3 p-4 border rounded-lg">
+                    <div class="h-8 w-8 rounded-full bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center">
+                      <svg class="h-4 w-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                      </svg>
+                    </div>
+                    <div class="flex-1">
+                      <div class="flex items-center gap-2 mb-1">
+                        <p class="font-semibold text-sm"><%= comment.user %></p>
+                        <span class="px-2 py-1 text-xs font-medium rounded-full border border-slate-300 dark:border-slate-600"><%= comment.role %></span>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">
+                          <%= format_date(comment.date) %>
+                        </p>
+                      </div>
+                      <p class="text-sm"><%= comment.message %></p>
+                    </div>
+                  </div>
+                <% end %>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sidebar -->
+      <div class="space-y-6">
+        
+        <!-- Quick Actions -->
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700">
+          <div class="p-6">
+            <h3 class="text-lg font-semibold mb-4">Acciones Rápidas</h3>
+            <div class="space-y-3">
+              <div class="space-y-2">
+                <label class="text-sm font-medium">Cambiar Estado del Ticket</label>
+                <button phx-click="show_status_modal" 
+                        class="w-full px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:shadow-lg transition-all">
+                  Cambiar Estado
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+                 <!-- Key Information -->
+         <div class="bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 hover:shadow-xl transition-shadow">
+           <div class="p-6">
+             <h3 class="text-lg font-semibold mb-4">Información Clave</h3>
+             <div class="space-y-4">
+               <div class="space-y-3">
+                 <%= if @ticket_type == "evaluation" do %>
+                   <div>
+                     <p class="text-sm text-slate-500 dark:text-slate-400 flex items-center gap-2">
+                       <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+                       </svg>
+                       Kilometraje
+                     </p>
+                     <p class="font-semibold"><%= @ticket.mileage || "No especificado" %></p>
+                     <p class="text-sm text-slate-500 dark:text-slate-400">Odómetro</p>
+                   </div>
+
+                   <hr class="border-slate-200 dark:border-slate-600">
+
+                   <div>
+                     <p class="text-sm text-slate-500 dark:text-slate-400 flex items-center gap-2">
+                       <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                       </svg>
+                       Tipo
+                     </p>
+                     <p class="font-semibold">
+                       <%= case get_evaluation_type(@ticket, @ticket_type) do %>
+                         <% "garantia" -> %>Garantía
+                         <% "colision" -> %>Colisión
+                         <% "desgaste" -> %>Desgaste
+                         <% "otro" -> %>Otro
+                         <% _ -> %>No especificado
+                       <% end %>
+                     </p>
+                     <p class="text-sm text-slate-500 dark:text-slate-400">Evaluación</p>
+                   </div>
+
+                   <hr class="border-slate-200 dark:border-slate-600">
+
+                   <div>
+                     <p class="text-sm text-slate-500 dark:text-slate-400 flex items-center gap-2">
+                       <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                       </svg>
+                       Entregado por
+                     </p>
+                     <p class="font-semibold"><%= get_evaluated_by(@ticket, @ticket_type) %></p>
+                     <p class="text-sm text-slate-500 dark:text-slate-400">Conductor</p>
+                   </div>
+
+                   <hr class="border-slate-200 dark:border-slate-600">
+
+                   <div>
+                     <p class="text-sm text-slate-500 dark:text-slate-400 flex items-center gap-2">
+                       <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                       </svg>
+                       Cédula del Conductor
+                     </p>
+                     <p class="font-semibold"><%= get_driver_cedula(@ticket, @ticket_type) %></p>
+                     <p class="text-sm text-slate-500 dark:text-slate-400">Documento</p>
+                   </div>
+
+                   <hr class="border-slate-200 dark:border-slate-600">
+
+                   <div>
+                     <p class="text-sm text-slate-500 dark:text-slate-400 flex items-center gap-2">
+                       <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                       </svg>
+                       Propietario
+                     </p>
+                     <p class="font-semibold">
+                       <%= if @truck.owner && @truck.owner != "", do: @truck.owner, else: "No especificado" %>
+                     </p>
+                     <p class="text-sm text-slate-500 dark:text-slate-400">Vehículo</p>
+                   </div>
+
+                   <hr class="border-slate-200 dark:border-slate-600">
+
+                   <div>
+                     <p class="text-sm text-slate-500 dark:text-slate-400 flex items-center gap-2">
+                       <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3a4 4 0 118 0v4m-4 6v6m-4-6h8m-8 6h8"/>
+                       </svg>
+                       Fechas Importantes
+                     </p>
+                     <div class="space-y-2 text-sm">
+                       <div class="flex justify-between">
+                         <span>Check-in:</span>
+                         <span><%= format_date(@ticket.inserted_at) %></span>
+                       </div>
+                       <%= if @ticket.status == "completed" and @ticket.updated_at != @ticket.inserted_at do %>
+                         <div class="flex justify-between">
+                           <span>Check-out:</span>
+                           <span><%= format_date(@ticket.updated_at) %></span>
+                         </div>
+                       <% end %>
+                     </div>
+                   </div>
+                 <% else %>
+                   <div>
+                     <p class="text-sm text-slate-500 dark:text-slate-400 flex items-center gap-2">
+                       <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+                       </svg>
+                       Kilometraje
+                     </p>
+                     <p class="font-semibold"><%= @ticket.mileage || "No especificado" %></p>
+                     <p class="text-sm text-slate-500 dark:text-slate-400">Odómetro</p>
+                   </div>
+
+                   <div>
+                     <p class="text-sm text-slate-500 dark:text-slate-400 flex items-center gap-2">
+                       <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                       </svg>
+                       Tipo de Mantenimiento
+                     </p>
+                     <p class="font-semibold">
+                       <%= get_maintenance_type_label(get_maintenance_specific_type(@ticket, @ticket_type)) %>
+                     </p>
+                     <p class="text-sm text-slate-500 dark:text-slate-400">Subtipo</p>
+                   </div>
+
+                   <hr class="border-slate-200 dark:border-slate-600">
+
+                   <div>
+                     <p class="text-sm text-slate-500 dark:text-slate-400 flex items-center gap-2">
+                       <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                       </svg>
+                       Prioridad
+                     </p>
+                     <p class="font-semibold">
+                       <span class={"px-2 py-1 text-xs font-medium rounded-full #{get_priority_color(get_severity_level(@ticket, @ticket_type))}"}>
+                         <%= get_priority_label(get_severity_level(@ticket, @ticket_type)) %>
+                       </span>
+                     </p>
+                     <p class="text-sm text-slate-500 dark:text-slate-400">Urgencia</p>
+                   </div>
+
+                   <hr class="border-slate-200 dark:border-slate-600">
+
+                   <div>
+                     <p class="text-sm text-slate-500 dark:text-slate-400 flex items-center gap-2">
+                       <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                       </svg>
+                       Entregado por
+                     </p>
+                     <p class="font-semibold"><%= get_evaluated_by(@ticket, @ticket_type) %></p>
+                     <p class="text-sm text-slate-500 dark:text-slate-400">Conductor</p>
+                   </div>
+
+                   <hr class="border-slate-200 dark:border-slate-600">
+
+                   <div>
+                     <p class="text-sm text-slate-500 dark:text-slate-400 flex items-center gap-2">
+                       <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                       </svg>
+                       Cédula del Conductor
+                     </p>
+                     <p class="font-semibold"><%= get_driver_cedula(@ticket, @ticket_type) %></p>
+                     <p class="text-sm text-slate-500 dark:text-slate-400">Documento</p>
+                   </div>
+
+                   <hr class="border-slate-200 dark:border-slate-600">
+
+                   <div>
+                     <p class="text-sm text-slate-500 dark:text-slate-400 flex items-center gap-2">
+                       <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                       </svg>
+                       Propietario
+                     </p>
+                     <p class="font-semibold">
+                       <%= if @truck.owner && @truck.owner != "", do: @truck.owner, else: "No especificado" %>
+                     </p>
+                     <p class="text-sm text-slate-500 dark:text-slate-400">Vehículo</p>
+                   </div>
+
+                   <hr class="border-slate-200 dark:border-slate-600">
+
+                   <div>
+                     <p class="text-sm text-slate-500 dark:text-slate-400 flex items-center gap-2">
+                       <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3a4 4 0 118 0v4m-4 6v6m-4-6h8m-8 6h8"/>
+                       </svg>
+                       Fechas Importantes
+                     </p>
+                     <div class="space-y-2 text-sm">
+                       <div class="flex justify-between">
+                         <span>Check-in:</span>
+                         <span><%= format_date(@ticket.inserted_at) %></span>
+                       </div>
+                       <%= if @ticket.status == "completed" and @ticket.updated_at != @ticket.inserted_at do %>
+                         <div class="flex justify-between">
+                           <span>Check-out:</span>
+                           <span><%= format_date(@ticket.updated_at) %></span>
+                         </div>
+                       <% end %>
+                     </div>
+                   </div>
+                 <% end %>
+               </div>
+             </div>
+           </div>
+         </div>
+
+        <!-- Timeline -->
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 hover:shadow-xl transition-shadow">
+          <div class="p-6">
+            <h3 class="text-lg font-semibold flex items-center gap-2 mb-4">
+              <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+              Cronología
+            </h3>
+            <div class="space-y-4">
+              <%= for log <- @activity_logs do %>
+                <div class="flex gap-3">
+                  <div class="h-2 w-2 rounded-full bg-blue-600 mt-2 flex-shrink-0"></div>
+                  <div class="flex-1 pb-4">
+                    <p class="text-sm font-medium"><%= log.description %></p>
+                    <p class="text-xs text-slate-500 dark:text-slate-400"><%= if log.user, do: log.user.email, else: "Sistema" %></p>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">
+                      <%= format_date(log.inserted_at) %>
+                    </p>
+                  </div>
+                </div>
+                          <% end %>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Confirmación de Eliminación -->
+  <%= if @show_delete_modal do %>
+    <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div class="bg-white dark:bg-slate-800 rounded-xl shadow-xl max-w-md w-full mx-4">
+        <div class="p-6">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">Confirmar Eliminación</h3>
+            <button phx-click="close_delete_modal" class="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+            </button>
+          </div>
+
+          <div class="space-y-4">
+            <div class="flex items-center space-x-3 p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
+              <svg class="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+              </svg>
+              <div>
+                <p class="font-medium text-red-800 dark:text-red-200">¿Eliminar archivo?</p>
+                <p class="text-sm text-red-600 dark:text-red-300">
+                  <%= @file_to_delete.info.original_name %>
+                </p>
+                <%= if @file_to_delete.info.description && @file_to_delete.info.description != "" do %>
+                  <p class="text-xs text-red-500 dark:text-red-400">
+                    Descripción: <%= @file_to_delete.info.description %>
+                  </p>
+                <% end %>
+              </div>
+            </div>
+
+            <p class="text-sm text-slate-600 dark:text-slate-400">
+              Esta acción no se puede deshacer. El archivo se eliminará permanentemente del sistema.
+            </p>
+          </div>
+
+          <div class="flex justify-end space-x-3 mt-6">
+            <button phx-click="close_delete_modal" 
+                    class="px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-600">
+              Cancelar
+            </button>
+            <button phx-click="confirm_delete_attachment"
+                    class="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700">
+              Eliminar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  <% end %>
+</div>
+
+  <!-- Edit Modal -->
+  <%= if @show_edit_modal do %>
+    <.live_component
+      module={EvaaCrmWebGaepell.EditTicketModalComponent}
+      id="edit-ticket-modal"
+      ticket={@ticket}
+      ticket_type={@ticket_type}
+      current_user={@current_user}
+      show={@show_edit_modal}
+    />
+  <% end %>
+<% else %>
+  <div class="bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700">
+    <div class="p-6">
+      <div class="flex items-center gap-4">
+        <button phx-click="back" class="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+          </svg>
+        </button>
+        <div>
+          <h1 class="text-2xl font-bold">Ticket no encontrado</h1>
+          <p class="text-slate-600 dark:text-slate-400">El ticket solicitado no existe</p>
+        </div>
+      </div>
+    </div>
+  </div>
+<% end %>
+
+<style>
+.slider {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.slider::-webkit-slider-track {
+  background: #e2e8f0;
+  height: 8px;
+  border-radius: 4px;
+}
+
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  background: linear-gradient(to right, #3b82f6, #8b5cf6);
+  height: 20px;
+  width: 20px;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.slider::-moz-range-track {
+  background: #e2e8f0;
+  height: 8px;
+  border-radius: 4px;
+}
+
+.slider::-moz-range-thumb {
+  background: linear-gradient(to right, #3b82f6, #8b5cf6);
+  height: 20px;
+  width: 20px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: none;
+}
+</style>
+
+<!-- Maintenance Form Edit Modal -->
+<%= if @show_maintenance_form_edit_modal do %>
+  <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+      <div class="p-6">
+        <div class="flex items-center justify-between mb-6">
+          <h3 class="text-xl font-semibold text-gray-900 dark:text-white">Editar Formulario de Mantenimiento</h3>
+          <button phx-click="close_maintenance_form_edit_modal" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+
+        <form phx-submit="update_maintenance_form">
+          <div class="space-y-6">
+            <!-- Tipo de Mantenimiento y Prioridad -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Tipo de Mantenimiento</label>
+                <select name="maintenance_type" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white">
+                  <option value="preventive" selected={get_maintenance_specific_type(@ticket, @ticket_type) == "preventive"}>Preventivo</option>
+                  <option value="corrective" selected={get_maintenance_specific_type(@ticket, @ticket_type) == "corrective"}>Correctivo</option>
+                  <option value="emergency" selected={get_maintenance_specific_type(@ticket, @ticket_type) == "emergency"}>Emergencia</option>
+                  <option value="inspection" selected={get_maintenance_specific_type(@ticket, @ticket_type) == "inspection"}>Inspección</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Prioridad</label>
+                <select name="priority" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white">
+                  <option value="low" selected={get_severity_level(@ticket, @ticket_type) == "low"}>Baja</option>
+                  <option value="medium" selected={get_severity_level(@ticket, @ticket_type) == "medium"}>Media</option>
+                  <option value="high" selected={get_severity_level(@ticket, @ticket_type) == "high"}>Alta</option>
+                  <option value="urgent" selected={get_severity_level(@ticket, @ticket_type) == "urgent"}>Urgente</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Áreas a Mantener -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Áreas a Mantener</label>
+              <div class="grid grid-cols-2 md:grid-cols-3 gap-2">
+                <% maintenance_areas = get_damage_areas(@ticket, @ticket_type) %>
+                <label class="flex items-center">
+                  <input type="checkbox" name="maintenance_areas[]" value="motor" checked={"motor" in maintenance_areas} class="mr-2">
+                  <span class="text-sm">Motor</span>
+                </label>
+                <label class="flex items-center">
+                  <input type="checkbox" name="maintenance_areas[]" value="frenos" checked={"frenos" in maintenance_areas} class="mr-2">
+                  <span class="text-sm">Frenos</span>
+                </label>
+                <label class="flex items-center">
+                  <input type="checkbox" name="maintenance_areas[]" value="suspension" checked={"suspension" in maintenance_areas} class="mr-2">
+                  <span class="text-sm">Suspensión</span>
+                </label>
+                <label class="flex items-center">
+                  <input type="checkbox" name="maintenance_areas[]" value="transmision" checked={"transmision" in maintenance_areas} class="mr-2">
+                  <span class="text-sm">Transmisión</span>
+                </label>
+                <label class="flex items-center">
+                  <input type="checkbox" name="maintenance_areas[]" value="electrico" checked={"electrico" in maintenance_areas} class="mr-2">
+                  <span class="text-sm">Eléctrico</span>
+                </label>
+                <label class="flex items-center">
+                  <input type="checkbox" name="maintenance_areas[]" value="neumaticos" checked={"neumaticos" in maintenance_areas} class="mr-2">
+                  <span class="text-sm">Neumáticos</span>
+                </label>
+                <label class="flex items-center">
+                  <input type="checkbox" name="maintenance_areas[]" value="carroceria" checked={"carroceria" in maintenance_areas} class="mr-2">
+                  <span class="text-sm">Carrocería</span>
+                </label>
+                <label class="flex items-center">
+                  <input type="checkbox" name="maintenance_areas[]" value="climatizacion" checked={"climatizacion" in maintenance_areas} class="mr-2">
+                  <span class="text-sm">Climatización</span>
+                </label>
+                <label class="flex items-center">
+                  <input type="checkbox" name="maintenance_areas[]" value="otros" checked={"otros" in maintenance_areas} class="mr-2">
+                  <span class="text-sm">Otros</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Información del Conductor -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Entregado por</label>
+                <input type="text" name="delivered_by" value={get_evaluated_by(@ticket, @ticket_type)} placeholder="Nombre de quien entrega" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Cédula del Conductor</label>
+                <input type="text" name="driver_cedula" value={get_driver_cedula(@ticket, @ticket_type)} placeholder="Cédula del conductor" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white">
+              </div>
+            </div>
+
+            <!-- Información del Vehículo -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Nivel de Combustible</label>
+                <select name="fuel_level" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white">
+                  <option value="empty" selected={@ticket.fuel_level == "empty"}>Vacío</option>
+                  <option value="quarter" selected={@ticket.fuel_level == "quarter"}>1/4</option>
+                  <option value="half" selected={@ticket.fuel_level == "half"}>1/2</option>
+                  <option value="three_quarters" selected={@ticket.fuel_level == "three_quarters"}>3/4</option>
+                  <option value="full" selected={@ticket.fuel_level == "full"}>Lleno</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Costo Estimado</label>
+                <input type="number" name="estimated_cost" value={get_estimated_cost(@ticket, @ticket_type)} placeholder="0.00" step="0.01" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Kilometraje</label>
+                <input type="number" name="mileage" value={@ticket.mileage} placeholder="0" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white">
+              </div>
+            </div>
+
+            <!-- Descripción y Daños -->
+            <div class="space-y-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Descripción del Problema</label>
+                <textarea name="description" rows="4" placeholder="Describe el problema o motivo del mantenimiento" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"><%= @ticket.description %></textarea>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Daños Visibles</label>
+                <textarea name="visible_damage" rows="3" placeholder="Describe los daños visibles si los hay" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"><%= @ticket.visible_damage %></textarea>
+              </div>
+            </div>
+          </div>
+
+          <!-- Botones del modal -->
+          <div class="flex justify-end space-x-3 mt-6">
+            <button type="button" phx-click="close_maintenance_form_edit_modal" class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600">
+              Cancelar
+            </button>
+            <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700">
+              Guardar Cambios
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+<% end %>
+
+<!-- Modal de Upload de Archivos -->
+<%= if @show_upload_modal do %>
+  <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-xl max-w-md w-full mx-4">
+      <div class="p-6">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">Subir Archivos</h3>
+          <button phx-click="close_upload_modal" class="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+
+        <form id="upload-attachments-form" phx-submit="save_attachments" phx-change="validate_attachments" phx-hook="UploadModal">
+          <div class="space-y-4">
+            <!-- Zona de arrastrar y soltar -->
+            <div class="border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-lg p-6 text-center">
+              <svg class="h-12 w-12 mx-auto mb-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+              </svg>
+              
+              <div class="space-y-2">
+                <div class="text-slate-600 dark:text-slate-400">
+                  <p class="text-sm">Arrastra archivos aquí o</p>
+                </div>
+                
+                <.live_file_input upload={@uploads.ticket_attachments} 
+                    class="hidden" 
+                    id="file-input"
+                    accept=".jpg,.jpeg,.png,.gif,.pdf,.doc,.docx,.txt,.xlsx,.xls"
+                    phx-change="validate_attachments" />
+                
+                <label for="file-input" class="cursor-pointer inline-flex items-center px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-700 hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors">
+                  <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                  </svg>
+                  Seleccionar archivos
+                </label>
+              </div>
+              
+              <p class="text-xs text-slate-500 dark:text-slate-400 mt-2">
+                Formatos: JPG, PNG, GIF, PDF, DOC, XLS (máx. 10MB)
+              </p>
+            </div>
+
+                                    <!-- Lista de archivos seleccionados -->
+                        <%= if length(@uploads.ticket_attachments.entries) > 0 do %>
+                          <div class="space-y-3">
+                            <h4 class="text-sm font-medium text-slate-700 dark:text-slate-300">Archivos seleccionados:</h4>
+                            <%= for entry <- @uploads.ticket_attachments.entries do %>
+                              <div class="border border-slate-200 dark:border-slate-600 rounded-lg p-3 bg-slate-50 dark:bg-slate-700">
+                                <!-- Información del archivo -->
+                                <div class="flex items-center justify-between mb-3">
+                                  <div class="flex items-center space-x-2">
+                                    <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                    </svg>
+                                    <span class="text-sm font-medium text-slate-700 dark:text-slate-300"><%= entry.client_name %></span>
+                                  </div>
+                                  <button type="button" phx-click="cancel_upload" phx-value-ref={entry.ref} class="p-1 hover:bg-slate-200 dark:hover:bg-slate-600 rounded">
+                                    <svg class="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                    </svg>
+                                  </button>
+                                </div>
+
+                                <!-- Campo de descripción -->
+                                <div class="space-y-2">
+                                  <label class="block text-xs font-medium text-slate-600 dark:text-slate-400">
+                                    Descripción (opcional):
+                                  </label>
+                                  <input type="text" 
+                                         placeholder="Ej: Foto del daño frontal, Documento de autorización..."
+                                         value={Map.get(@file_descriptions || %{}, entry.ref, "")}
+                                         phx-keyup="update_file_description"
+                                         phx-value-ref={entry.ref}
+                                         class="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-slate-600 dark:text-white">
+                                </div>
+
+                                <!-- Barra de progreso -->
+                                <div class="w-full bg-slate-200 dark:bg-slate-600 rounded-full h-2 mt-3">
+                                  <div class="bg-blue-600 h-2 rounded-full transition-all duration-300" style={"width: #{entry.progress}%"}></div>
+                                </div>
+                              </div>
+                            <% end %>
+                          </div>
+                        <% end %>
+
+            <!-- Errores de upload -->
+            <%= for err <- upload_errors(@uploads.ticket_attachments) do %>
+              <div class="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                <p class="text-sm text-red-600 dark:text-red-400"><%= error_to_string(err) %></p>
+              </div>
+            <% end %>
+          </div>
+
+          <!-- Botones del modal -->
+          <div class="flex justify-end space-x-3 mt-6">
+            <button type="button" phx-click="close_upload_modal" class="px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-600">
+              Cancelar
+            </button>
+            <button type="submit" 
+                    disabled={length(@uploads.ticket_attachments.entries) == 0}
+                    class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed">
+              Subir Archivos
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+<% end %>
+
+<!-- Damage Info Edit Modal -->
+<%= if @show_damage_info_edit_modal do %>
+  <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+      <div class="p-6">
+        <div class="flex items-center justify-between mb-6">
+          <h3 class="text-xl font-semibold text-gray-900 dark:text-white">Editar Información de Daños</h3>
+          <button phx-click="close_damage_info_edit_modal" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+
+        <form phx-submit="update_damage_info">
+          <div class="space-y-6">
+            <!-- Tipo de Evaluación y Nivel de Severidad -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Tipo de Evaluación</label>
+                <select name="evaluation_type" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white">
+                  <option value="garantia" selected={get_evaluation_type(@ticket, @ticket_type) == "garantia"}>Garantía</option>
+                  <option value="colision" selected={get_evaluation_type(@ticket, @ticket_type) == "colision"}>Colisión</option>
+                  <option value="desgaste" selected={get_evaluation_type(@ticket, @ticket_type) == "desgaste"}>Desgaste</option>
+                  <option value="otro" selected={get_evaluation_type(@ticket, @ticket_type) == "otro"}>Otro</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Nivel de Severidad</label>
+                <select name="severity_level" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white">
+                  <option value="low" selected={get_severity_level(@ticket, @ticket_type) == "low"}>Bajo</option>
+                  <option value="medium" selected={get_severity_level(@ticket, @ticket_type) == "medium"}>Medio</option>
+                  <option value="high" selected={get_severity_level(@ticket, @ticket_type) == "high"}>Alto</option>
+                  <option value="critical" selected={get_severity_level(@ticket, @ticket_type) == "critical"}>Crítico</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Costo Estimado -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Costo Estimado ($)</label>
+              <input type="number" name="estimated_cost" value={get_estimated_cost(@ticket, @ticket_type)} placeholder="0" min="0" step="0.01" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white">
+            </div>
+
+            <!-- Áreas de Daño -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Áreas de Daño</label>
+              <div class="grid grid-cols-2 md:grid-cols-3 gap-2">
+                <% damage_areas = get_damage_areas(@ticket, @ticket_type) %>
+                <label class="flex items-center">
+                  <input type="checkbox" name="damage_areas[]" value="frontend" checked={"frontend" in damage_areas} class="mr-2">
+                  <span class="text-sm">Frontal</span>
+                </label>
+                <label class="flex items-center">
+                  <input type="checkbox" name="damage_areas[]" value="backend" checked={"backend" in damage_areas} class="mr-2">
+                  <span class="text-sm">Trasero</span>
+                </label>
+                <label class="flex items-center">
+                  <input type="checkbox" name="damage_areas[]" value="left_side" checked={"left_side" in damage_areas} class="mr-2">
+                  <span class="text-sm">Lado Izquierdo</span>
+                </label>
+                <label class="flex items-center">
+                  <input type="checkbox" name="damage_areas[]" value="right_side" checked={"right_side" in damage_areas} class="mr-2">
+                  <span class="text-sm">Lado Derecho</span>
+                </label>
+                <label class="flex items-center">
+                  <input type="checkbox" name="damage_areas[]" value="roof" checked={"roof" in damage_areas} class="mr-2">
+                  <span class="text-sm">Techo</span>
+                </label>
+                <label class="flex items-center">
+                  <input type="checkbox" name="damage_areas[]" value="undercarriage" checked={"undercarriage" in damage_areas} class="mr-2">
+                  <span class="text-sm">Bajos</span>
+                </label>
+                <label class="flex items-center">
+                  <input type="checkbox" name="damage_areas[]" value="interior" checked={"interior" in damage_areas} class="mr-2">
+                  <span class="text-sm">Interior</span>
+                </label>
+                <label class="flex items-center">
+                  <input type="checkbox" name="damage_areas[]" value="mechanical" checked={"mechanical" in damage_areas} class="mr-2">
+                  <span class="text-sm">Mecánico</span>
+                </label>
+                <label class="flex items-center">
+                  <input type="checkbox" name="damage_areas[]" value="electrical" checked={"electrical" in damage_areas} class="mr-2">
+                  <span class="text-sm">Eléctrico</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Descripción del Daño -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Descripción del Daño</label>
+              <textarea name="damage_description" rows="4" placeholder="Describe detalladamente los daños encontrados..." class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"><%= @ticket.description %></textarea>
+            </div>
+
+            <!-- Notas Adicionales -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Notas Adicionales</label>
+              <textarea name="notes" rows="3" placeholder="Notas adicionales, observaciones especiales..." class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"><%= get_notes(@ticket, @ticket_type) %></textarea>
+            </div>
+          </div>
+
+          <!-- Botones del modal -->
+          <div class="flex justify-end space-x-3 mt-6">
+            <button type="button" phx-click="close_damage_info_edit_modal" class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600">
+              Cancelar
+            </button>
+            <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-orange-600 rounded-lg hover:bg-orange-700">
+              Guardar Cambios
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+<% end %>
+
+<!-- Edit File Description Modal -->
+<%= if @show_edit_file_description_modal do %>
+  <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full mx-4">
+      <div class="p-6">
+        <div class="flex items-center justify-between mb-6">
+          <h3 class="text-xl font-semibold text-gray-900 dark:text-white">Editar Descripción del Archivo</h3>
+          <button phx-click="close_edit_file_description_modal" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+
+        <form phx-submit="update_file_description">
+          <div class="space-y-4">
+            <!-- File Info -->
+            <div class="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+              <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">Archivo:</p>
+              <p class="font-medium text-gray-900 dark:text-white"><%= @editing_file_name %></p>
+            </div>
+
+            <!-- Description Input -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Descripción</label>
+              <textarea name="file_description" 
+                        rows="3" 
+                        placeholder="Describe el contenido o propósito de este archivo..."
+                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                        maxlength="200"><%= @editing_file_description %></textarea>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Máximo 200 caracteres</p>
+            </div>
+          </div>
+
+          <!-- Hidden inputs -->
+          <input type="hidden" name="file_index" value={@editing_file_index}>
+          <input type="hidden" name="file_path" value={@editing_file_path}>
+
+          <!-- Buttons -->
+          <div class="flex justify-end space-x-3 mt-6">
+            <button type="button" phx-click="close_edit_file_description_modal" class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600">
+              Cancelar
+            </button>
+            <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700">
+              Guardar Descripción
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+<% end %>
+
+<!-- Convert to Maintenance Modal -->
+<%= if @show_convert_modal do %>
+  <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white dark:bg-slate-800 rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">Convertir a Mantenimiento</h3>
+        <button phx-click="close_convert_modal" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
+          <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+      
+      <div class="space-y-4">
+        <!-- Información del camión -->
+        <div class="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-3">
+          <p class="text-sm font-medium text-slate-700 dark:text-slate-300">Camión</p>
+          <p class="text-sm text-slate-900 dark:text-slate-100">
+            <%= if @truck, do: "#{@truck.brand} #{@truck.model} (#{@truck.license_plate})", else: "N/A" %>
+          </p>
+        </div>
+
+        <!-- Tipo de evaluación -->
+        <div>
+          <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Tipo de Evaluación</label>
+          <select class="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100">
+            <option value="maintenance">Mantenimiento</option>
+            <option value="collision">Colisión</option>
+            <option value="warranty">Garantía</option>
+            <option value="other">Otro</option>
+          </select>
+        </div>
+
+        <!-- Costo estimado de reparación -->
+        <div>
+          <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Costo Estimado de Reparación ($)</label>
+          <input type="number" value={get_estimated_cost(@ticket, @ticket_type)} step="0.01" min="0" 
+                 class="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
+                 placeholder="0.00">
+        </div>
+
+        <!-- Notas de evaluación -->
+        <div>
+          <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Notas de Evaluación</label>
+          <textarea rows="3" 
+                    class="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
+                    placeholder="Detalles adicionales de la evaluación..."><%= get_notes(@ticket, @ticket_type) %></textarea>
+        </div>
+      </div>
+
+      <div class="flex justify-end space-x-3 mt-6">
+        <button type="button" phx-click="close_convert_modal" 
+                class="px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-md text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+          Cancelar
+        </button>
+        <button phx-click="convert_to_maintenance" 
+                class="px-4 py-2 bg-green-600 border border-transparent rounded-md text-sm font-medium text-white hover:bg-green-700 transition-colors">
+          Convertir a Mantenimiento
+        </button>
+      </div>
+    </div>
+  </div>
+<% end %>
+
+<!-- Status Change Modal -->
+<%= if @show_status_modal do %>
+  <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white dark:bg-slate-800 rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">Cambiar Estado del Ticket</h3>
+        <button phx-click="hide_status_modal" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
+          <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+      
+      <form phx-submit="update_status">
+        <div class="space-y-4">
+          <!-- Información del ticket -->
+          <div class="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-3">
+            <p class="text-sm font-medium text-slate-700 dark:text-slate-300">Ticket #<%= @ticket.id %></p>
+            <p class="text-sm text-slate-900 dark:text-slate-100">
+              <%= if @truck, do: "#{@truck.brand} #{@truck.model} (#{@truck.license_plate})", else: "N/A" %>
+            </p>
+            <p class="text-xs text-slate-500 dark:text-slate-400">Estado actual: <span class="font-medium"><%= get_status_label(@ticket.status) %></span></p>
+          </div>
+
+          <!-- Selector de estado -->
+          <div>
+            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Nuevo Estado</label>
+            <select phx-change="status_changed" name="new_status" class="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100">
+              <option value="">Seleccionar estado...</option>
+              <option value="new_ticket">Nueva Orden</option>
+              <option value="reception">Recepción</option>
+              <option value="diagnosis">Diagnóstico</option>
+              <option value="repair">Reparación</option>
+              <option value="final_check">Revisión Final</option>
+              <option value="completed">Completada</option>
+              <option value="cancelled">Cancelada</option>
+            </select>
+          </div>
+
+          <!-- Notas del cambio de estado -->
+          <div>
+            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Notas (opcional)</label>
+            <textarea name="status_notes" rows="3" 
+                      class="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
+                      placeholder="Comentarios sobre el cambio de estado..."></textarea>
+          </div>
+        </div>
+
+        <div class="flex justify-end space-x-3 mt-6">
+          <button type="button" phx-click="hide_status_modal" 
+                  class="px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-md text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+            Cancelar
+          </button>
+          <button type="submit" 
+                  disabled={@new_status == ""}
+                  class="px-4 py-2 bg-blue-600 border border-transparent rounded-md text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+            Actualizar Estado
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+<% end %>

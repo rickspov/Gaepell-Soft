@@ -417,11 +417,12 @@ defmodule EvaaCrmWebGaepell.TicketWizardLive do
             {:noreply, put_flash(socket, :error, "Espera a que se completen todas las subidas antes de guardar.")}
           true ->
             # Asegurar que el directorio existe
-            File.mkdir_p!(@uploads_dir)
+            uploads_dir = Path.expand("priv/static/uploads")
+            File.mkdir_p!(uploads_dir)
             
             photo_urls = consume_uploaded_entries(socket, :damage_photos, fn %{path: path}, _entry ->
               filename = "ticket_#{socket.assigns.created_ticket.id}_#{System.system_time()}.jpg"
-              dest = Path.join(@uploads_dir, filename)
+              dest = Path.join(uploads_dir, filename)
               File.mkdir_p!(Path.dirname(dest))
               File.cp!(path, dest)
               {:ok, "/uploads/#{filename}"}
@@ -429,7 +430,7 @@ defmodule EvaaCrmWebGaepell.TicketWizardLive do
             
             # Save signature as image file
             signature_filename = "signature_#{socket.assigns.created_ticket.id}_#{System.system_time()}.png"
-            signature_path = Path.join(@uploads_dir, signature_filename)
+            signature_path = Path.join(uploads_dir, signature_filename)
             
             # Convert base64 to image file
             signature_data_clean = String.replace(signature_data, "data:image/png;base64,", "")
@@ -487,11 +488,12 @@ defmodule EvaaCrmWebGaepell.TicketWizardLive do
           {:noreply, put_flash(socket, :error, "Espera a que se completen todas las subidas antes de guardar.")}
         true ->
           # Asegurar que el directorio existe
-          File.mkdir_p!(@uploads_dir)
+          uploads_dir = Path.expand("priv/static/uploads")
+          File.mkdir_p!(uploads_dir)
           
           photo_urls = consume_uploaded_entries(socket, :damage_photos, fn %{path: path}, _entry ->
             filename = "ticket_#{socket.assigns.created_ticket.id}_#{System.system_time()}.jpg"
-            dest = Path.join(@uploads_dir, filename)
+            dest = Path.join(uploads_dir, filename)
             File.mkdir_p!(Path.dirname(dest))
             File.cp!(path, dest)
             {:ok, "/uploads/#{filename}"}
@@ -553,12 +555,12 @@ defmodule EvaaCrmWebGaepell.TicketWizardLive do
       
       true ->
         # Asegurar que el directorio existe
-        @uploads_dir = Path.expand("priv/static/uploads")
-        File.mkdir_p!(@uploads_dir)
+        uploads_dir = Path.expand("priv/static/uploads")
+        File.mkdir_p!(uploads_dir)
         
         photo_urls = consume_uploaded_entries(socket, :damage_photos, fn %{path: path}, _entry ->
           filename = "evaluation_#{socket.assigns.created_ticket.id}_#{System.system_time()}.jpg"
-          dest = Path.join(@uploads_dir, filename)
+          dest = Path.join(uploads_dir, filename)
           File.mkdir_p!(Path.dirname(dest))
           File.cp!(path, dest)
           {:ok, "/uploads/#{filename}"}
@@ -643,7 +645,8 @@ defmodule EvaaCrmWebGaepell.TicketWizardLive do
         IO.inspect(meta, label: "[DEBUG] meta")
         IO.inspect(entry, label: "[DEBUG] entry")
         filename = "evaluation_#{found_truck.id}_#{System.system_time()}_#{entry.client_name}"
-        dest = Path.join([@uploads_dir, filename])
+        uploads_dir = Path.expand("priv/static/uploads")
+        dest = Path.join([uploads_dir, filename])
         IO.puts("[DEBUG] Copiando de #{path} a #{dest}")
         File.mkdir_p!(Path.dirname(dest))
         File.cp!(path, dest)
@@ -661,22 +664,37 @@ defmodule EvaaCrmWebGaepell.TicketWizardLive do
         
       # Create evaluation ticket
       now = DateTime.utc_now() |> DateTime.truncate(:second)
+      
+      # Preparar descripción basada en el tipo de evaluación
+      description = case evaluation_params["evaluation_type"] do
+        "warranty" -> 
+          warranty_details = evaluation_params["warranty_details"] || ""
+          "Garantía: #{warranty_details}"
+        _ -> 
+          evaluation_params["damage_description"] || ""
+      end
+      
+      # Get evaluation type label
+      evaluation_type = evaluation_params["evaluation_type"] || "collision"
+      type_label = get_evaluation_type_label(evaluation_type)
+      
       ticket_attrs = %{
-        title: "Evaluación - #{found_truck.license_plate}",
-        description: evaluation_params["damage_description"] || "",
+        title: "#{type_label} - #{found_truck.license_plate}",
+        description: description,
         entry_date: now,
         mileage: found_truck.kilometraje || 0,
         fuel_level: "full",
         status: "check_in",
         color: "#8b5cf6", # Purple color for evaluations
-        visible_damage: evaluation_params["damage_description"] || "",
+        visible_damage: description,
         evaluation_type: evaluation_params["evaluation_type"] || "collision",
         evaluation_notes: evaluation_params["evaluation_notes"] || "",
+        warranty_details: evaluation_params["warranty_details"] || "",
         truck_id: found_truck.id,
-          business_id: socket.assigns.current_user.business_id,
+        business_id: socket.assigns.current_user.business_id,
         specialist_id: nil, # Will be assigned later
         damage_photos: photo_urls
-        }
+      }
         
       case %EvaaCrmGaepell.MaintenanceTicket{} |> EvaaCrmGaepell.MaintenanceTicket.changeset(ticket_attrs) |> EvaaCrmGaepell.Repo.insert() do
         {:ok, ticket} ->
@@ -709,6 +727,10 @@ defmodule EvaaCrmWebGaepell.TicketWizardLive do
     end
   end
 
+
+
+
+
   @impl true
   def handle_event("cancel-upload", %{"ref" => ref}, socket) do
     {:noreply, cancel_upload(socket, :evaluation_photos, ref)}
@@ -731,6 +753,7 @@ defmodule EvaaCrmWebGaepell.TicketWizardLive do
            |> assign(new_truck: nil)
            |> assign(found_truck: truck)
            |> assign(step: :quotation_details)
+           |> assign(:evaluation_form_data, %{}) # Inicializar datos del formulario
            |> allow_upload(:evaluation_photos, accept: ~w(.jpg .jpeg .png .gif), max_entries: 10, auto_upload: true)}
         else
           # For other flows, redirect to search by plate
@@ -1236,23 +1259,31 @@ defmodule EvaaCrmWebGaepell.TicketWizardLive do
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Descripción del Daño/Problema *</label>
             <textarea name="evaluation[damage_description]" rows="4" required
                       placeholder="Describe detalladamente el daño o problema que requiere evaluación..."
-                      class="w-full p-3 rounded border text-gray-900 dark:text-white bg-white dark:bg-gray-700"></textarea>
+                      class="w-full p-3 rounded border text-gray-900 dark:text-white bg-white dark:bg-gray-700"><%= @evaluation_form_data && @evaluation_form_data["damage_description"] %></textarea>
           </div>
           
           <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Tipo de Evaluación</label>
-            <select name="evaluation[evaluation_type]" class="w-full p-3 rounded border text-gray-900 dark:text-white bg-white dark:bg-gray-700">
+            <select name="evaluation[evaluation_type]" onchange="toggleWarrantyField(this.value)" class="w-full p-3 rounded border text-gray-900 dark:text-white bg-white dark:bg-gray-700">
               <option value="collision">Evaluación de Choque</option>
               <option value="maintenance">Evaluación de Mantenimiento</option>
+              <option value="warranty">Garantía</option>
               <option value="other">Otro</option>
             </select>
           </div>
           
+          <div id="warranty-field" style="display: none;">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Detalles de Garantía *</label>
+            <textarea name="evaluation[warranty_details]" rows="4" required
+                      placeholder="Describe detalladamente los detalles de la garantía a trabajar..."
+                      class="w-full p-3 rounded border text-gray-900 dark:text-white bg-white dark:bg-gray-700"><%= @evaluation_form_data && @evaluation_form_data["warranty_details"] %></textarea>
+          </div>
+          
           <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Observaciones Adicionales</label>
-            <textarea name="evaluation[evaluation_notes]" rows="3"
-                      placeholder="Observaciones adicionales sobre la evaluación..."
-                      class="w-full p-3 rounded border text-gray-900 dark:text-white bg-white dark:bg-gray-700"></textarea>
+                          <textarea name="evaluation[evaluation_notes]" rows="3"
+                        placeholder="Observaciones adicionales sobre la evaluación..."
+                        class="w-full p-3 rounded border text-gray-900 dark:text-white bg-white dark:bg-gray-700"><%= @evaluation_form_data && @evaluation_form_data["evaluation_notes"] %></textarea>
           </div>
           
           <!-- Sección de Fotos de Evaluación -->
@@ -2258,6 +2289,38 @@ defmodule EvaaCrmWebGaepell.TicketWizardLive do
       });
     });
   }
+
+  // Función para manejar el toggle del campo de garantía
+  function toggleWarrantyField(evaluationType) {
+    console.log('[DEBUG] toggleWarrantyField called with:', evaluationType);
+    const warrantyField = document.getElementById('warranty-field');
+    console.log('[DEBUG] warrantyField found:', warrantyField);
+    if (warrantyField) {
+      if (evaluationType === 'warranty') {
+        warrantyField.style.display = 'block';
+        console.log('[DEBUG] warranty field shown');
+      } else {
+        warrantyField.style.display = 'none';
+        console.log('[DEBUG] warranty field hidden');
+      }
+    }
+  }
+
+  // Inicializar el estado del campo de garantía al cargar la página
+  document.addEventListener("DOMContentLoaded", function() {
+    const evaluationTypeSelect = document.querySelector('select[name="evaluation[evaluation_type]"]');
+    if (evaluationTypeSelect) {
+      toggleWarrantyField(evaluationTypeSelect.value);
+    }
+  });
+
+  // También inicializar cuando Phoenix actualice el DOM
+  window.addEventListener("phx:update", function() {
+    const evaluationTypeSelect = document.querySelector('select[name="evaluation[evaluation_type]"]');
+    if (evaluationTypeSelect) {
+      toggleWarrantyField(evaluationTypeSelect.value);
+    }
+  });
 </script>
     """
   end
@@ -2334,12 +2397,22 @@ defmodule EvaaCrmWebGaepell.TicketWizardLive do
       
       :quotation ->
         IO.puts("[DEBUG] Inicializando upload para evaluación en wizard")
+        IO.puts("[DEBUG] entry_type: #{inspect(socket.assigns.entry_type)}")
+        IO.puts("[DEBUG] truck_id: #{truck_id}")
+        IO.puts("[DEBUG] truck: #{inspect(truck)}")
+        
         socket = socket
          |> assign(:show_existing_trucks_modal, false)
          |> assign(:found_truck, truck)
          |> assign(:step, :quotation_details)
+         |> assign(:evaluation_type, "collision") # Inicializar con valor por defecto
+         |> assign(:evaluation_form_data, %{}) # Inicializar datos del formulario
          |> allow_upload(:evaluation_photos, accept: ~w(.jpg .jpeg .png .gif), max_entries: 10, auto_upload: true)
         
+        IO.puts("[DEBUG] Paso asignado: #{inspect(socket.assigns.step)}")
+        IO.puts("[DEBUG] found_truck asignado: #{inspect(socket.assigns.found_truck)}")
+        IO.puts("[DEBUG] found_truck.id: #{inspect(socket.assigns.found_truck.id)}")
+        IO.puts("[DEBUG] found_truck.license_plate: #{inspect(socket.assigns.found_truck.license_plate)}")
         IO.inspect(socket.assigns.uploads.evaluation_photos, label: "[DEBUG] upload configurado en wizard")
         {:noreply, socket}
     end
@@ -2408,5 +2481,15 @@ defmodule EvaaCrmWebGaepell.TicketWizardLive do
   end
 
   defp filter_owners(_query, _owners), do: []
+
+  defp get_evaluation_type_label(type) do
+    case type do
+      "garantia" -> "Garantía"
+      "colision" -> "Colisión"
+      "desgaste" -> "Desgaste"
+      "otro" -> "Otro"
+      _ -> "Desconocido"
+    end
+  end
 
 end 

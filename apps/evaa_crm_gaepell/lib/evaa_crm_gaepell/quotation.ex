@@ -63,7 +63,7 @@ defmodule EvaaCrmGaepell.Quotation do
     |> validate_number(:quantity, greater_than: 0)
     |> validate_number(:markup_percentage, greater_than_or_equal_to: 0)
     |> validate_format(:client_email, ~r/@/, allow_nil: true)
-    |> validate_inclusion(:evaluation_type, ["collision", "maintenance", "other"], allow_nil: true)
+    |> validate_inclusion(:evaluation_type, ["collision", "maintenance", "warranty", "other"], allow_nil: true)
     |> validate_inclusion(:approval_status, ["pending", "approved", "rejected"], allow_nil: true)
     |> foreign_key_constraint(:business_id)
     |> foreign_key_constraint(:user_id)
@@ -135,12 +135,14 @@ defmodule EvaaCrmGaepell.Quotation do
     [
       {"Evaluación de Choque", "collision"},
       {"Evaluación de Mantenimiento", "maintenance"},
+      {"Garantía", "warranty"},
       {"Otro", "other"}
     ]
   end
 
   def evaluation_type_label("collision"), do: "Evaluación de Choque"
   def evaluation_type_label("maintenance"), do: "Evaluación de Mantenimiento"
+  def evaluation_type_label("warranty"), do: "Garantía"
   def evaluation_type_label("other"), do: "Otro"
   def evaluation_type_label(_), do: "Desconocido"
 

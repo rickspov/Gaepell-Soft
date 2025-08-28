@@ -3,7 +3,7 @@ import Config
 # Configure your database
 config :evaa_crm_gaepell, EvaaCrmGaepell.Repo,
   username: "postgres",
-  password: System.get_env("PGPASSWORD", ""),
+  password: "postgres",
   hostname: "localhost",
   database: "evaa_crm_gaepell_dev",
   stacktrace: true,

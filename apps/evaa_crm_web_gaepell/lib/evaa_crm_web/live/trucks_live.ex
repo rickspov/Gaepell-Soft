@@ -28,6 +28,7 @@ defmodule EvaaCrmWebGaepell.TrucksLive do
     |> assign(:existing_brands, existing_brands)
     |> assign(:existing_models, existing_models)
     |> assign(:existing_owners, existing_owners)
+    |> assign(:view_mode, "table")
 
     {:ok, socket}
   end
@@ -98,6 +99,10 @@ defmodule EvaaCrmWebGaepell.TrucksLive do
   def handle_event("filter_models", %{"value" => query}, socket) do
     filtered_models = filter_models(query, socket.assigns.existing_models)
     {:noreply, push_event(socket, "update_model_suggestions", %{suggestions: filtered_models})}
+  end
+
+  def handle_event("change_view_mode", %{"mode" => mode}, socket) do
+    {:noreply, assign(socket, :view_mode, mode)}
   end
 
   def handle_event("filter_models", %{"key" => _key, "value" => query}, socket) do

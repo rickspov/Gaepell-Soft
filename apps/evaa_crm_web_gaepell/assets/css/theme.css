@@ -13,6 +13,44 @@
   --sidebar-border: #e5e7eb;
   --nav-hover: #f3f4f6;
   --nav-active: #dbeafe;
+  
+  /* Template variables */
+  --background: #fafbfc;
+  --foreground: #1a1b23;
+  --card: #ffffff;
+  --card-foreground: #1a1b23;
+  --popover: #ffffff;
+  --popover-foreground: #1a1b23;
+  --primary: #fec50b;
+  --primary-foreground: #1a1b23;
+  --secondary: #f1f5f9;
+  --secondary-foreground: #334155;
+  --muted: #f8fafc;
+  --muted-foreground: #64748b;
+  --accent: #fec50b;
+  --accent-foreground: #1a1b23;
+  --destructive: #dc2626;
+  --destructive-foreground: #ffffff;
+  --border: #e2e8f0;
+  --input: #ffffff;
+  --input-background: #ffffff;
+  --switch-background: #cbd5e1;
+  --ring: #fec50b;
+  --radius: 0.75rem;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #1a1b23;
+  --sidebar-primary: #fec50b;
+  --sidebar-primary-foreground: #1a1b23;
+  --sidebar-accent: #f8fafc;
+  --sidebar-accent-foreground: #334155;
+  --sidebar-border: #e2e8f0;
+  --sidebar-ring: #fec50b;
+  --success: #059669;
+  --success-foreground: #ffffff;
+  --warning: #f97316;
+  --warning-foreground: #ffffff;
+  --info: #0284c7;
+  --info-foreground: #ffffff;
 }
 
 /* Dark theme */
@@ -30,6 +68,43 @@
   --sidebar-border: #374151;
   --nav-hover: #374151;
   --nav-active: #1e3a8a;
+  
+  /* Template variables - Dark theme */
+  --background: #0a0a0b;
+  --foreground: #fafafa;
+  --card: #111111;
+  --card-foreground: #fafafa;
+  --popover: #111111;
+  --popover-foreground: #fafafa;
+  --primary: #fec50b;
+  --primary-foreground: #0a0a0b;
+  --secondary: #1f1f23;
+  --secondary-foreground: #e4e4e7;
+  --muted: #18181b;
+  --muted-foreground: #a1a1aa;
+  --accent: #fec50b;
+  --accent-foreground: #0a0a0b;
+  --destructive: #ef4444;
+  --destructive-foreground: #fafafa;
+  --border: #27272a;
+  --input: #18181b;
+  --input-background: #18181b;
+  --switch-background: #3f3f46;
+  --ring: #fec50b;
+  --sidebar: #0f0f10;
+  --sidebar-foreground: #fafafa;
+  --sidebar-primary: #fec50b;
+  --sidebar-primary-foreground: #0a0a0b;
+  --sidebar-accent: #1f1f23;
+  --sidebar-accent-foreground: #e4e4e7;
+  --sidebar-border: #27272a;
+  --sidebar-ring: #fec50b;
+  --success: #22c55e;
+  --success-foreground: #fafafa;
+  --warning: #fb7185;
+  --warning-foreground: #fafafa;
+  --info: #60a5fa;
+  --info-foreground: #fafafa;
 }
 
 /* Sidebar Navigation Styles */
@@ -92,4 +167,46 @@
 /* Remove old theme toggle styles */
 .theme-toggle {
   /* Styles moved to nav-item class */
+}
+
+/* Template gradient classes */
+.gradient-primary {
+  background: linear-gradient(135deg, #fec50b 0%, #f59e0b 50%, #eab308 100%);
+}
+
+.gradient-success {
+  background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%);
+}
+
+.gradient-warning {
+  background: linear-gradient(135deg, #fb7185 0%, #ef4444 100%);
+}
+
+.gradient-danger {
+  background: linear-gradient(135deg, #f87171 0%, #ef4444 100%);
+}
+
+.gradient-info {
+  background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
+}
+
+.gradient-accent {
+  background: linear-gradient(135deg, #fec50b 0%, #f59e0b 100%);
+}
+
+.gradient-gold-blue {
+  background: linear-gradient(135deg, #fec50b 0%, #3b82f6 100%);
+}
+
+.gradient-gold-green {
+  background: linear-gradient(135deg, #fec50b 0%, #10b981 100%);
+}
+
+.gradient-gold-purple {
+  background: linear-gradient(135deg, #fec50b 0%, #8b5cf6 100%);
+}
+
+/* Shadow classes */
+.shadow-gold {
+  box-shadow: 0 10px 25px -5px rgb(254 197 11 / 0.2);
 } 

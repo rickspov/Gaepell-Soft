@@ -25,6 +25,61 @@ import Sortable from "sortablejs"
 
 // Import agenda drag and drop functionality
 import "./agenda_drag_drop.js"
+// Import signature pad hook
+import SignaturePad from "./hooks/signature_pad.js"
+
+// Custom hook for document upload
+const DocumentUpload = {
+  mounted() {
+    this.input = this.el;
+    this.input.addEventListener('change', (e) => {
+      const files = Array.from(e.target.files);
+      files.forEach(file => {
+        this.uploadFile(file);
+      });
+    });
+  },
+
+  uploadFile(file) {
+    // Create a unique ref for this upload
+    const ref = this.pushEventTo(this.el, "validate-upload", { file: file.name });
+    
+    // You can add progress tracking here if needed
+    console.log(`Uploading ${file.name}...`);
+  }
+};
+
+// Custom hook for document preview navigation
+const DocumentPreview = {
+  mounted() {
+    this.handleKeydown = this.handleKeydown.bind(this);
+    document.addEventListener('keydown', this.handleKeydown);
+  },
+
+  destroyed() {
+    document.removeEventListener('keydown', this.handleKeydown);
+  },
+
+  handleKeydown(e) {
+    // Only handle keys when the modal is open
+    if (this.el.style.display !== 'none') {
+      switch(e.key) {
+        case 'ArrowLeft':
+          e.preventDefault();
+          this.pushEvent('keydown', { key: 'ArrowLeft' });
+          break;
+        case 'ArrowRight':
+          e.preventDefault();
+          this.pushEvent('keydown', { key: 'ArrowRight' });
+          break;
+        case 'Escape':
+          e.preventDefault();
+          this.pushEvent('keydown', { key: 'Escape' });
+          break;
+      }
+    }
+  }
+};
 
 // Custom hook for agenda drag and drop
 const AgendaDragDrop = {
@@ -268,8 +323,12 @@ const DigitalSignature = {
     this.canvas.width = rect.width;
     this.canvas.height = rect.height;
     
+    // Forzar color de fondo oscuro azul para el canvas
+    this.ctx.fillStyle = "#374151"; // bg-gray-700
+    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+    
     // Set drawing context
-    this.ctx.strokeStyle = '#000000';
+    this.ctx.strokeStyle = '#ffffff'; // Color blanco para la firma
     this.ctx.lineWidth = 2;
     this.ctx.lineCap = 'round';
     this.ctx.lineJoin = 'round';
@@ -383,7 +442,10 @@ const DigitalSignature = {
   },
 
   clearSignature() {
+    // Limpiar y restaurar el color de fondo
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    this.ctx.fillStyle = "#374151"; // bg-gray-700
+    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
     this.saveSignature();
   },
 
@@ -626,23 +688,141 @@ const SidebarManager = {
   initSidebar() {
     // Mobile sidebar toggle
     const sidebarToggle = document.querySelector('[data-drawer-toggle="logo-sidebar"]');
+    // Desktop sidebar toggle
+    const desktopSidebarToggle = document.querySelector('#sidebar-toggle');
     const sidebar = document.querySelector('#logo-sidebar');
+    const mainContent = document.querySelector('#main-content');
     
-    if (sidebarToggle && sidebar) {
-      sidebarToggle.addEventListener('click', () => {
-        sidebar.classList.toggle('-translate-x-full');
+    if (!sidebar || !mainContent) {
+      console.error('Sidebar or main content not found');
+      return;
+    }
+    
+    // Función para verificar si el sidebar está oculto
+    const isSidebarHidden = () => {
+      const transform = sidebar.style.transform;
+      const isHidden = transform === 'translateX(-100%)' || 
+                      transform === 'translateX(-100px)' ||
+                      transform === '' || 
+                      transform === 'none' ||
+                      transform === 'translateX(-256px)' ||
+                      transform.includes('-100%') ||
+                      transform.includes('-256px') ||
+                      transform.includes('-') ||
+                      sidebar.classList.contains('-translate-x-full');
+      
+      console.log('Checking if sidebar is hidden:', {
+        transform,
+        isHidden,
+        includesNegative: transform.includes('-'),
+        hasClass: sidebar.classList.contains('-translate-x-full')
+      });
+      
+      return isHidden;
+    };
+    
+    // Función para ocultar sidebar
+    const hideSidebar = () => {
+      sidebar.style.transform = 'translateX(-100%)';
+      sidebar.classList.remove('-translate-x-full');
+      sidebar.classList.add('translate-x-0');
+      if (window.innerWidth >= 640) {
+        mainContent.style.marginLeft = '0';
+      }
+      localStorage.setItem('sidebar-hidden', 'true');
+      console.log('Sidebar hidden');
+    };
+    
+    // Función para mostrar sidebar
+    const showSidebar = () => {
+      sidebar.style.transform = 'translateX(0)';
+      sidebar.classList.remove('-translate-x-full');
+      sidebar.classList.add('translate-x-0');
+      if (window.innerWidth >= 640) {
+        mainContent.style.marginLeft = '16rem'; // 256px = 16rem
+      }
+      localStorage.setItem('sidebar-hidden', 'false');
+      console.log('Sidebar shown');
+    };
+    
+    // Toggle para móvil
+    const mobileSidebarToggle = document.getElementById('mobile-sidebar-toggle');
+    if (mobileSidebarToggle) {
+      mobileSidebarToggle.addEventListener('click', () => {
+        console.log('Mobile sidebar toggle clicked');
+        if (window.innerWidth < 640) {
+          if (isSidebarHidden()) {
+            showSidebar();
+          } else {
+            hideSidebar();
+          }
+        }
       });
     
       // Close sidebar when clicking outside on mobile
       document.addEventListener('click', (e) => {
-        if (window.innerWidth < 640 && // Only on mobile
+        if (window.innerWidth < 640 && 
             !sidebar.contains(e.target) && 
-            !sidebarToggle.contains(e.target) &&
-            !sidebar.classList.contains('-translate-x-full')) {
-          sidebar.classList.add('-translate-x-full');
+            !mobileSidebarToggle.contains(e.target) &&
+            !isSidebarHidden()) {
+          hideSidebar();
         }
       });
     }
+    
+    // Toggle para desktop
+    if (desktopSidebarToggle) {
+      desktopSidebarToggle.addEventListener('click', () => {
+        if (window.innerWidth >= 640) {
+          console.log('Desktop sidebar toggle clicked');
+          
+          // Usar localStorage para determinar el estado actual
+          const sidebarHidden = localStorage.getItem('sidebar-hidden');
+          const currentlyHidden = sidebarHidden === 'true';
+          
+          console.log('Current localStorage state:', sidebarHidden);
+          console.log('Currently hidden:', currentlyHidden);
+          
+          if (currentlyHidden) {
+            showSidebar();
+          } else {
+            hideSidebar();
+          }
+        }
+      });
+    }
+    
+    // Configurar estado inicial
+    if (window.innerWidth >= 640) {
+      const sidebarHidden = localStorage.getItem('sidebar-hidden');
+      if (sidebarHidden === 'true') {
+        hideSidebar();
+      } else {
+        // Estado por defecto: sidebar visible
+        showSidebar();
+      }
+    } else {
+      // En móviles, el sidebar siempre debe estar oculto por defecto
+      sidebar.style.transform = 'translateX(-100%)';
+      sidebar.classList.add('-translate-x-full');
+      sidebar.classList.remove('translate-x-0');
+    }
+    
+    // Manejar cambio de tamaño de ventana
+    window.addEventListener('resize', () => {
+      if (window.innerWidth >= 640) {
+        // En desktop, restaurar el estado guardado
+        const sidebarHidden = localStorage.getItem('sidebar-hidden');
+        if (sidebarHidden === 'true') {
+          hideSidebar();
+        } else {
+          showSidebar();
+        }
+      } else {
+        // En móvil, siempre ocultar el sidebar
+        hideSidebar();
+      }
+    });
   },
 
   initUserDropdown() {
@@ -664,6 +844,240 @@ const SidebarManager = {
   }
 };
 
+// Hook para debugging del formulario de evaluación
+let EvaluationForm = {
+  mounted() {
+    console.log('🔍 EvaluationForm hook mounted');
+    
+    // Log cuando se envía el formulario
+    this.el.addEventListener('submit', (e) => {
+      console.log('📝 Form submit event triggered');
+      console.log('📝 Form action:', this.el.action);
+      console.log('📝 Form method:', this.el.method);
+      
+      // Log todos los campos del formulario
+      const formData = new FormData(this.el);
+      console.log('📊 Form data entries:');
+      for (let [key, value] of formData.entries()) {
+        console.log(`  ${key}: ${value}`);
+      }
+    });
+  }
+};
+
+// Hook para el upload de fotos
+let PhotoUpload = {
+  mounted() {
+    console.log('📸 PhotoUpload hook mounted');
+    
+    // Buscar el input de archivo
+    const fileInput = this.el.querySelector('input[type="file"]');
+    if (fileInput) {
+      console.log('📸 File input found:', fileInput);
+      
+      fileInput.addEventListener('change', (e) => {
+        console.log('📸 File input change event:', e.target.files);
+        console.log('📸 Files selected:', e.target.files.length);
+        
+        // Forzar el upload manualmente
+        if (e.target.files.length > 0) {
+          console.log('📸 Triggering manual upload...');
+          this.pushEvent('manual_upload_triggered', {
+            files: Array.from(e.target.files).map(f => f.name)
+          });
+        }
+      });
+    } else {
+      console.log('📸 No file input found in element');
+    }
+  }
+};
+
+// Hook para el modal de upload
+let UploadModal = {
+  mounted() {
+    console.log('📁 UploadModal hook mounted');
+    
+    // Buscar el input de archivo
+    const fileInput = this.el.querySelector('input[type="file"]');
+    if (fileInput) {
+      console.log('📁 File input found:', fileInput);
+      
+      // Asegurar que el label funcione correctamente
+      const label = this.el.querySelector('label[for="file-input"]');
+      if (label) {
+        label.addEventListener('click', (e) => {
+          console.log('📁 Label clicked, triggering file input');
+          fileInput.click();
+        });
+      }
+    } else {
+      console.log('📁 No file input found in element');
+    }
+  }
+};
+
+// Hook para manejar la carga de imágenes en las miniaturas
+let ImageThumbnails = {
+  mounted() {
+    console.log('🖼️ ImageThumbnails hook mounted');
+    console.log('🖼️ Element:', this.el);
+    
+    // Buscar todas las imágenes en el elemento
+    const images = this.el.querySelectorAll('img');
+    console.log('🖼️ All images found:', images.length);
+    
+    images.forEach((img, index) => {
+      console.log(`🖼️ Image ${index + 1}:`, {
+        src: img.src,
+        alt: img.alt,
+        className: img.className,
+        style: img.style.cssText
+      });
+    });
+    
+    // Buscar específicamente imágenes de uploads
+    const uploadImages = this.el.querySelectorAll('img[src*="/uploads/"]');
+    console.log('🖼️ Upload images found:', uploadImages.length);
+    
+    uploadImages.forEach((img, index) => {
+      console.log(`🖼️ Upload image ${index + 1}:`, img.src);
+      
+      // Verificar si la imagen ya está cargada
+      if (img.complete) {
+        console.log(`🖼️ Image already loaded:`, img.src);
+        img.style.opacity = '1';
+      } else {
+        console.log(`🖼️ Image not loaded yet:`, img.src);
+        img.style.opacity = '0';
+        img.style.transition = 'opacity 0.3s ease-in-out';
+      }
+      
+      // Agregar evento de carga exitosa
+      img.addEventListener('load', () => {
+        console.log(`🖼️ Image loaded successfully:`, img.src);
+        img.style.opacity = '1';
+      });
+      
+      // Agregar evento de error
+      img.addEventListener('error', () => {
+        console.log(`🖼️ Image failed to load:`, img.src);
+        console.log(`🖼️ Error details:`, {
+          naturalWidth: img.naturalWidth,
+          naturalHeight: img.naturalHeight,
+          complete: img.complete
+        });
+        // Mostrar el fallback
+        const fallback = img.nextElementSibling;
+        if (fallback && fallback.classList.contains('bg-slate-100')) {
+          console.log(`🖼️ Showing fallback for:`, img.src);
+          img.style.display = 'none';
+          fallback.style.display = 'flex';
+        }
+      });
+    });
+  }
+};
+
+// Hook para el slider de progreso
+let ProgressSlider = {
+  mounted() {
+    console.log('📊 ProgressSlider hook mounted');
+    
+    this.el.addEventListener('input', (e) => {
+      const progress = e.target.value;
+      console.log('📊 Slider value changed to:', progress);
+      
+      // Enviar el evento al LiveView
+      this.pushEvent('update_progress', { progress: progress });
+    });
+  }
+};
+
+// Hook para el wizard de mantenimiento
+let MaintenancePhotoUpload = {
+  mounted() {
+    console.log('🔧 MaintenancePhotoUpload hook mounted');
+    console.log('🔧 Element:', this.el);
+    
+    // Buscar el input de archivo
+    const fileInput = this.el.querySelector('input[type="file"]');
+    if (fileInput) {
+      console.log('🔧 File input found:', fileInput);
+      
+      fileInput.addEventListener('change', (e) => {
+        console.log('🔧 File input change event:', e.target.files);
+        console.log('🔧 Files selected:', e.target.files.length);
+        
+        // Forzar el upload manualmente
+        if (e.target.files.length > 0) {
+          console.log('🔧 Triggering manual upload...');
+          this.pushEvent('maintenance_file_selected', {
+            files: Array.from(e.target.files).map(f => f.name)
+          });
+        }
+      });
+    } else {
+      console.log('🔧 No file input found in element');
+    }
+  }
+};
+
+// Hook específico para el upload de evaluación
+let EvaluationPhotoUpload = {
+  mounted() {
+    console.log('📸 EvaluationPhotoUpload hook mounted');
+    
+    // Buscar el input de archivo específico para evaluación
+    const fileInput = this.el.querySelector('input[type="file"]');
+    if (fileInput) {
+      console.log('📸 Evaluation file input found:', fileInput);
+      
+      fileInput.addEventListener('change', (e) => {
+        console.log('📸 Evaluation file input change event:', e.target.files);
+        console.log('📸 Files selected:', e.target.files.length);
+        
+        if (e.target.files.length > 0) {
+          console.log('📸 Forcing LiveView upload processing...');
+          
+          // Obtener el liveSocket del elemento
+          const liveSocket = window.liveSocket;
+          if (liveSocket) {
+            console.log('📸 LiveSocket found, triggering upload...');
+            
+            // Forzar el procesamiento del upload manualmente
+            const view = liveSocket.getViewByEl(this.el);
+            if (view) {
+              console.log('📸 View found, processing uploads...');
+              
+              // Simular el evento de cambio que LiveView espera
+              const changeEvent = new Event('change', { bubbles: true });
+              fileInput.dispatchEvent(changeEvent);
+              
+              // Forzar el procesamiento inmediato
+              setTimeout(() => {
+                console.log('📸 Forcing upload entries update...');
+                this.pushEvent('force_upload_processing', {
+                  files: Array.from(e.target.files).map(f => f.name),
+                  uploadRef: this.el.getAttribute('data-upload-ref')
+                });
+              }, 100);
+            }
+          }
+          
+          // También enviar evento al servidor como respaldo
+          this.pushEvent('evaluation_file_selected', {
+            files: Array.from(e.target.files).map(f => f.name),
+            uploadRef: this.el.getAttribute('data-upload-ref')
+          });
+        }
+      });
+    } else {
+      console.log('📸 No evaluation file input found in element');
+    }
+  }
+};
+
 let Hooks = {
   AgendaDragDrop,
   FileUploadPreview,
@@ -672,7 +1086,17 @@ let Hooks = {
   SidebarManager,
   ThemeToggle,
   DigitalSignature,
-  TabManager
+  TabManager,
+  EvaluationForm,
+  PhotoUpload,
+  EvaluationPhotoUpload,
+  UploadModal,
+  ImageThumbnails,
+  MaintenancePhotoUpload,
+  ProgressSlider,
+  DocumentUpload,
+  DocumentPreview,
+  SignaturePad
 };
 
 let csrfToken = document.querySelector("meta[name='csrf-token']")?.getAttribute("content");
@@ -713,72 +1137,7 @@ window.addEventListener("phx:actividad_reciente", (event) => {
 });
 
 // --- Hook para firma digital en checkout ---
-let SignaturePad = {
-  mounted() {
-    const canvas = document.createElement("canvas");
-    canvas.width = 400;
-    canvas.height = 180;
-    canvas.style.width = "100%";
-    canvas.style.height = "180px";
-    this.el.appendChild(canvas);
-    const ctx = canvas.getContext("2d");
-    ctx.strokeStyle = "#111";
-    ctx.lineWidth = 2;
-    let drawing = false;
-    let lastX = 0, lastY = 0;
-    const startDraw = e => {
-      drawing = true;
-      [lastX, lastY] = getXY(e, canvas);
-    };
-    const draw = e => {
-      if (!drawing) return;
-      const [x, y] = getXY(e, canvas);
-      ctx.beginPath();
-      ctx.moveTo(lastX, lastY);
-      ctx.lineTo(x, y);
-      ctx.stroke();
-      [lastX, lastY] = [x, y];
-    };
-    const stopDraw = () => { drawing = false; };
-    function getXY(e, canvas) {
-      if (e.touches && e.touches.length > 0) {
-        const rect = canvas.getBoundingClientRect();
-        return [e.touches[0].clientX - rect.left, e.touches[0].clientY - rect.top];
-      } else {
-        const rect = canvas.getBoundingClientRect();
-        return [e.offsetX || e.clientX - rect.left, e.offsetY || e.clientY - rect.top];
-      }
-    }
-    // Mouse events
-    canvas.addEventListener("mousedown", startDraw);
-    canvas.addEventListener("mousemove", draw);
-    canvas.addEventListener("mouseup", stopDraw);
-    canvas.addEventListener("mouseleave", stopDraw);
-    // Touch events
-    canvas.addEventListener("touchstart", startDraw);
-    canvas.addEventListener("touchmove", draw);
-    canvas.addEventListener("touchend", stopDraw);
-    // Limpiar firma
-    const clearBtn = document.getElementById("clear-signature");
-    clearBtn.addEventListener("click", () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      document.getElementById("signature-data").value = "";
-    });
-    // Guardar firma en base64 al terminar de dibujar
-    const saveSignature = () => {
-      const data = canvas.toDataURL("image/png");
-      document.getElementById("signature-data").value = data;
-      // Opcional: enviar a LiveView para validación inmediata
-      this.pushEvent("update_signature", {data});
-    };
-    canvas.addEventListener("mouseup", saveSignature);
-    canvas.addEventListener("touchend", saveSignature);
-  }
-};
-
-window.LiveSocket = window.LiveSocket || {};
-window.LiveSocket.Hooks = window.LiveSocket.Hooks || {};
-window.LiveSocket.Hooks.SignaturePad = SignaturePad;
+// SignaturePad hook is now imported from ./hooks/signature_pad.js
 
 // --- User Modal logic ---
 document.addEventListener("DOMContentLoaded", function() {
@@ -963,15 +1322,22 @@ function initializeSidebar() {
       // Aplicar el nuevo estado
       applySidebarState(sidebar, mainContent, sidebarCollapsed);
     });
+    
+    // Manejar resize de ventana
+    window.addEventListener('resize', function() {
+      applySidebarState(sidebar, mainContent, sidebarCollapsed);
+    });
   }
 }
 
 function applySidebarState(sidebar, mainContent, collapsed) {
-  if (collapsed) {
-    // Colapsar sidebar
-    sidebar.style.width = '4rem'; // 64px
-    sidebar.style.transform = 'translateX(0)';
-    mainContent.style.marginLeft = '4rem';
+  // Solo aplicar en desktop (sm y superior)
+  if (window.innerWidth >= 640) {
+    if (collapsed) {
+      // Colapsar sidebar
+      sidebar.style.width = '4rem'; // 64px
+      sidebar.style.transform = 'translateX(0)';
+      mainContent.style.marginLeft = '4rem';
     
     // Ocultar texto en los elementos del sidebar
     const sidebarTexts = sidebar.querySelectorAll('span, .ms-3');
@@ -986,17 +1352,17 @@ function applySidebarState(sidebar, mainContent, collapsed) {
       item.style.padding = '0.5rem';
     });
     
-    // Ajustar el botón de feedback
-    const feedbackBtn = sidebar.querySelector('a[href="/feedback"]');
-    if (feedbackBtn) {
-      feedbackBtn.style.justifyContent = 'center';
-      feedbackBtn.style.padding = '0.75rem';
-    }
-  } else {
-    // Expandir sidebar
-    sidebar.style.width = '16rem'; // 256px
-    sidebar.style.transform = 'translateX(0)';
-    mainContent.style.marginLeft = '16rem';
+      // Ajustar el botón de feedback
+      const feedbackBtn = sidebar.querySelector('a[href="/feedback"]');
+      if (feedbackBtn) {
+        feedbackBtn.style.justifyContent = 'center';
+        feedbackBtn.style.padding = '0.75rem';
+      }
+    } else {
+      // Expandir sidebar
+      sidebar.style.width = '16rem'; // 256px
+      sidebar.style.transform = 'translateX(0)';
+      mainContent.style.marginLeft = '16rem';
     
     // Mostrar texto en los elementos del sidebar
     const sidebarTexts = sidebar.querySelectorAll('span, .ms-3');
@@ -1011,12 +1377,30 @@ function applySidebarState(sidebar, mainContent, collapsed) {
       item.style.padding = '';
     });
     
-    // Restaurar el botón de feedback
-    const feedbackBtn = sidebar.querySelector('a[href="/feedback"]');
-    if (feedbackBtn) {
-      feedbackBtn.style.justifyContent = '';
-      feedbackBtn.style.padding = '';
+      // Restaurar el botón de feedback
+      const feedbackBtn = sidebar.querySelector('a[href="/feedback"]');
+      if (feedbackBtn) {
+        feedbackBtn.style.justifyContent = '';
+        feedbackBtn.style.padding = '';
+      }
     }
+  } else {
+    // En móvil, asegurar que el sidebar esté completamente oculto
+    sidebar.style.width = '16rem';
+    sidebar.style.transform = 'translateX(-100%)';
+    mainContent.style.marginLeft = '0';
+    
+    // Resetear cualquier estilo de colapso
+    const sidebarTexts = sidebar.querySelectorAll('span, .ms-3');
+    sidebarTexts.forEach(text => {
+      text.style.display = '';
+    });
+    
+    const sidebarItems = sidebar.querySelectorAll('a, button');
+    sidebarItems.forEach(item => {
+      item.style.justifyContent = '';
+      item.style.padding = '';
+    });
   }
 }
 

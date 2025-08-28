@@ -1426,15 +1426,77 @@ defmodule EvaaCrmWebGaepell.KanbanLive do
 
   # Helpers para stats y actividades recientes
   defp get_dashboard_stats do
-    tickets_activos = Repo.aggregate(from(m in MaintenanceTicket, where: m.status in ["check_in", "in_workshop", "final_review", "car_wash"]), :count, :id)
-    leads_nuevos = Repo.aggregate(from(l in Lead, where: l.status == "new"), :count, :id)
-    ordenes_produccion = Repo.aggregate(from(p in ProductionOrder, where: p.status in ["new_order", "reception", "assembly", "mounting", "final_check"]), :count, :id)
-    camiones_activos = Repo.aggregate(from(t in Truck, where: t.status == "active"), :count, :id)
+    total_trucks = Repo.aggregate(from(t in Truck, where: t.status == "active"), :count, :id)
+    
+    # Tickets (total de mantenimiento + producción)
+    maintenance_tickets = Repo.aggregate(from(m in MaintenanceTicket, where: m.status in ["check_in", "in_workshop", "final_review", "car_wash", "new_ticket", "reception", "diagnosis", "repair", "final_check", "cancelled"]), :count, :id)
+    production_tickets = Repo.aggregate(from(p in ProductionOrder, where: p.status != "completed"), :count, :id)
+    total_tickets = maintenance_tickets + production_tickets
+    
+    # Evaluaciones
+    evaluations = Repo.aggregate(from(e in EvaaCrmGaepell.Evaluation), :count, :id)
+    
+    # Completados (mantenimiento + producción completados)
+    completed_maintenance = Repo.aggregate(from(m in MaintenanceTicket, where: m.status in ["check_out", "car_wash", "final_review", "completed"]), :count, :id)
+    completed_production = Repo.aggregate(from(p in ProductionOrder, where: p.status == "completed"), :count, :id)
+    total_completed = completed_maintenance + completed_production
+    
+    # Camiones recientes
+    recent_trucks = Repo.all(from t in Truck, 
+      where: t.status == "active",
+      order_by: [desc: t.updated_at],
+      limit: 3,
+      select: %{
+        id: t.id,
+        license_plate: t.license_plate,
+        brand: t.brand,
+        model: t.model,
+        status: t.status,
+        updated_at: t.updated_at
+      })
+      |> Enum.map(fn truck ->
+        Map.merge(truck, %{
+          status_classes: if(truck.status == "active", do: "gradient-success text-white border-0 px-2 py-1 rounded-full text-xs", else: "bg-orange-100 dark:bg-orange-900/50 text-orange-700 dark:text-orange-300 border-orange-200 dark:border-orange-800 px-2 py-1 rounded-full text-xs"),
+          status_label: if(truck.status == "active", do: "Activo", else: "Mantenimiento"),
+          last_maintenance: truck.updated_at
+        })
+      end)
+    
+    # Tickets recientes
+    recent_tickets = Repo.all(from m in MaintenanceTicket,
+      order_by: [desc: m.inserted_at],
+      limit: 3,
+      select: %{
+        id: m.id,
+        title: m.title,
+        status: m.status,
+        truck_license_plate: fragment("(SELECT license_plate FROM trucks WHERE id = ?)", m.truck_id),
+        inserted_at: m.inserted_at
+      })
+      |> Enum.map(fn ticket ->
+        Map.merge(ticket, %{
+          status_classes: case ticket.status do
+            "pending" -> "bg-yellow-100 dark:bg-yellow-900/50 text-yellow-700 dark:text-yellow-300 border-yellow-200 dark:border-yellow-800"
+            "in_progress" -> "bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800"
+            "completed" -> "gradient-success text-white border-0"
+            _ -> "bg-gray-100 dark:bg-gray-900/50 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-800"
+          end,
+          status_label: case ticket.status do
+            "pending" -> "Pendiente"
+            "in_progress" -> "En Progreso"
+            "completed" -> "Completado"
+            _ -> "Desconocido"
+          end
+        })
+      end)
+    
     %{
-      tickets_activos: tickets_activos,
-      leads_nuevos: leads_nuevos,
-      ordenes_produccion: ordenes_produccion,
-      camiones_activos: camiones_activos
+      total_trucks: total_trucks,
+      pending_tickets: total_tickets,
+      completed_maintenance: evaluations,
+      critical_alerts: total_completed,
+      recent_trucks: recent_trucks,
+      recent_tickets: recent_tickets
     }
   end
 
@@ -1525,6 +1587,8 @@ defmodule EvaaCrmWebGaepell.KanbanLive do
       true -> "hace #{div(seconds, 86400)} días"
     end
   end
+
+
 
   @impl true
   def handle_info({:feedback_status_changed, feedback_id, status, description}, socket) do

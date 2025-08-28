@@ -26,6 +26,23 @@ defmodule EvaaCrmWebGaepell.Router do
     delete "/logout", SessionController, :delete
   end
 
+  # Serve uploaded files
+  scope "/uploads", EvaaCrmWebGaepell do
+    pipe_through :browser
+    
+    get "/evaluations/*path", UploadController, :evaluation_photo
+    get "/tickets/*path", UploadController, :ticket_attachment
+    get "/maintenance/*path", UploadController, :maintenance_photo
+    get "/documents/*path", UploadController, :document_file
+  end
+
+  # Download generated files
+  scope "/downloads", EvaaCrmWebGaepell do
+    pipe_through :browser
+    
+    get "/:document_id/:filename", DownloadController, :document_zip
+  end
+
   scope "/", EvaaCrmWebGaepell do
     pipe_through [:browser, :auth]
 
@@ -49,8 +66,14 @@ defmodule EvaaCrmWebGaepell.Router do
     live "/trucks/:id", TruckProfileLive
     live "/maintenance", MaintenanceTicketsLive
     live "/maintenance/:id", MaintenanceTicketsLive
+    live "/tickets/:id", TicketDetailLive
     live "/logs/:entity_type/:entity_id", ActivityLogsLive
     live "/checkin", TicketWizardLive
+    live "/checkin-wizard", CheckinWizardLive
+    live "/maintenance-checkin-wizard", MaintenanceCheckinWizardLive
+    live "/tickets", TicketsLive
+    get "/evaluations", RedirectController, :to_evaluations_tab
+    live "/documents", DocumentsLive
     live "/feedback", FeedbackLive
     live "/checkout", MaintenanceCheckoutLive
     live "/quotations", QuotationsLive
@@ -58,6 +81,7 @@ defmodule EvaaCrmWebGaepell.Router do
     live "/pricing", PricingLive
     live "/symasoft-integration", SymasoftIntegrationLive
     live "/production-orders", ProductionOrdersLive
+    live "/production-orders/:id", ProductionOrderDetailLive
     
     # API para sincronización offline
     post "/api/sync", SyncController, :sync

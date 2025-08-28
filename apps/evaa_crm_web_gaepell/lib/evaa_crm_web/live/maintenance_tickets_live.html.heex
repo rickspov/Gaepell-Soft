@@ -38,7 +38,7 @@
             <% end %>
           </select>
         </form>
-        <a href="/checkin" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2">
+        <a href="/checkin-wizard" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
           </svg>
@@ -58,7 +58,7 @@
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Camión</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Fecha Ingreso</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Estado</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Kilometraje</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Progreso</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Combustible</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Fotos</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Acciones</th>
@@ -86,16 +86,24 @@
               </td>
               <td class="px-6 py-4 whitespace-nowrap">
                 <%= if @editing_status_id == ticket.id do %>
-                  <form phx-change="update_status" class="inline">
+                  <form phx-submit="update_status" class="inline">
                     <input type="hidden" name="id" value={ticket.id} />
-                    <select name="status" class="px-2 py-1 text-xs rounded-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:ring-2 focus:ring-blue-500">
-                      <option value="check_in" selected={ticket.status == "check_in"}>Check In</option>
-                      <option value="in_workshop" selected={ticket.status == "in_workshop"}>En Taller/Reparación</option>
-                      <option value="final_review" selected={ticket.status == "final_review"}>Revisión Final</option>
-                      <option value="car_wash" selected={ticket.status == "car_wash"}>Car Wash</option>
-                      <option value="check_out" selected={ticket.status == "check_out"}>Check Out</option>
-                      <option value="cancelled" selected={ticket.status == "cancelled"}>Cancelado</option>
-                    </select>
+                    <div class="flex items-center gap-2">
+                      <select name="status" class="px-2 py-1 text-xs rounded-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:ring-2 focus:ring-blue-500">
+                        <option value="check_in" selected={ticket.status == "check_in"}>Check In</option>
+                        <option value="in_workshop" selected={ticket.status == "in_workshop"}>En Taller/Reparación</option>
+                        <option value="final_review" selected={ticket.status == "final_review"}>Revisión Final</option>
+                        <option value="car_wash" selected={ticket.status == "car_wash"}>Car Wash</option>
+                        <option value="check_out" selected={ticket.status == "check_out"}>Check Out</option>
+                        <option value="cancelled" selected={ticket.status == "cancelled"}>Cancelado</option>
+                      </select>
+                      <button type="submit" class="px-2 py-1 text-xs bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors">
+                        ✓
+                      </button>
+                      <button type="button" phx-click="cancel_edit_status" class="px-2 py-1 text-xs bg-gray-500 text-white rounded-full hover:bg-gray-600 transition-colors">
+                        ✕
+                      </button>
+                    </div>
                   </form>
                 <% else %>
                   <span class={"px-2 py-1 text-xs font-semibold rounded-full cursor-pointer transition-all " <> status_color(ticket.status)} phx-click="edit_status" phx-value-id={ticket.id} title="Editar estado">
@@ -112,7 +120,13 @@
                 <% end %>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
-                <%= if ticket.mileage, do: "#{ticket.mileage} km" %>
+                <div class="flex items-center gap-2">
+                  <div class="w-16 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                    <div class="bg-gradient-to-r from-blue-600 to-purple-600 h-2 rounded-full transition-all duration-300" 
+                         style={"width: #{ticket.progress || 0}%"}></div>
+                  </div>
+                  <span class="text-xs font-medium"><%= ticket.progress || 0 %>%</span>
+                </div>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
                 <%= ticket.fuel_level %>
@@ -142,13 +156,7 @@
                       <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18.75a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 0 1-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 0 0-3.213-9.193 2.056 2.056 0 0 0-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 0 0-10.026 0 1.106 1.106 0 0 0-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12"/>
                     </svg>
                   </a>
-                  <a href={"/logs/maintenance_ticket/#{ticket.id}"} 
-                     class="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300"
-                     title="Ver historial de actividad">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                    </svg>
-                  </a>
+
                   <button phx-click="show_form" phx-value-ticket_id={ticket.id} 
                           class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300"
                           title="Editar ticket">
@@ -504,25 +512,35 @@
 
   <!-- Delete Confirmation Modal -->
   <%= if @show_delete_confirm do %>
-    <div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-      <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white dark:bg-gray-800">
-        <div class="mt-3 text-center">
-          <h3 class="text-lg font-medium text-gray-900 dark:text-white">Confirmar Eliminación</h3>
-          <div class="mt-2 px-7 py-3">
-            <p class="text-sm text-gray-500 dark:text-gray-400">
-              ¿Estás seguro de que quieres eliminar <strong><%= @delete_target.name %></strong>?
-            </p>
+    <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]" phx-click="hide_delete_confirm" phx-window-keydown="hide_delete_confirm" phx-key="escape">
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-4 p-6" phx-click="ignore">
+        <div class="flex items-center mb-4">
+          <div class="flex-shrink-0">
+            <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+            </svg>
           </div>
-          <div class="flex justify-center space-x-3">
-            <button phx-click="hide_delete_confirm" 
-                    class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
-              Cancelar
-            </button>
-            <button phx-click="confirm_delete" 
-                    class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700">
-              Eliminar
-            </button>
+          <div class="ml-3">
+            <h3 class="text-lg font-medium text-gray-900 dark:text-white">Confirmar Eliminación</h3>
           </div>
+        </div>
+        <div class="mt-2">
+          <p class="text-sm text-gray-500 dark:text-gray-400">
+            ¿Estás seguro de que quieres eliminar <strong class="text-gray-900 dark:text-white"><%= @delete_target.name %></strong>?
+          </p>
+          <p class="text-xs text-red-600 dark:text-red-400 mt-2">
+            Esta acción no se puede deshacer.
+          </p>
+        </div>
+        <div class="mt-6 flex justify-end space-x-3">
+          <button phx-click="hide_delete_confirm" 
+                  class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+            Cancelar
+          </button>
+          <button phx-click="confirm_delete" 
+                  class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 transition-colors">
+            Eliminar
+          </button>
         </div>
       </div>
     </div>

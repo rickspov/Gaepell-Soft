@@ -18,23 +18,33 @@ defmodule EvaaCrmGaepell.Truck do
     field :general_notes, :string
     field :profile_photo, :string
     field :kilometraje, :integer, default: 0
+    field :rear_tire_width, :integer
+    field :useful_length, :integer
+    field :chassis_length, :integer
+    field :chassis_width, :integer
 
     belongs_to :business, EvaaCrmGaepell.Business
     has_many :maintenance_tickets, EvaaCrmGaepell.MaintenanceTicket
     has_many :activities, EvaaCrmGaepell.Activity
     has_many :truck_photos, EvaaCrmGaepell.TruckPhoto
     has_many :truck_notes, EvaaCrmGaepell.TruckNote
+    has_many :truck_documents, EvaaCrmGaepell.TruckDocument
 
     timestamps()
   end
 
   def changeset(truck, attrs) do
     truck
-    |> cast(attrs, [:brand, :model, :license_plate, :chassis_number, :vin, :color, :year, :capacity, :fuel_type, :status, :owner, :ficha, :general_notes, :profile_photo, :kilometraje, :business_id])
+    |> cast(attrs, [:brand, :model, :license_plate, :chassis_number, :vin, :color, :year, :capacity, :fuel_type, :status, :owner, :ficha, :general_notes, :profile_photo, :kilometraje, :rear_tire_width, :useful_length, :chassis_length, :chassis_width, :business_id])
     |> validate_required([:brand, :model, :license_plate, :business_id])
     |> validate_inclusion(:status, ["active", "maintenance", "inactive"])
     |> validate_inclusion(:fuel_type, ["diesel", "gasoline", "electric", "hybrid"])
+
     |> validate_number(:kilometraje, greater_than_or_equal_to: 0)
+    |> validate_number(:rear_tire_width, greater_than: 0)
+    |> validate_number(:useful_length, greater_than: 0)
+    |> validate_number(:chassis_length, greater_than: 0)
+    |> validate_number(:chassis_width, greater_than: 0)
     |> foreign_key_constraint(:business_id)
   end
 

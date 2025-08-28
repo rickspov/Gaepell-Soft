@@ -1,7 +1,8 @@
 defmodule EvaaCrmWebGaepell.TruckProfileLive do
   use EvaaCrmWebGaepell, :live_view
-  alias EvaaCrmGaepell.{Truck, MaintenanceTicket, TruckPhoto, TruckNote, Repo}
+  alias EvaaCrmGaepell.{Truck, MaintenanceTicket, TruckPhoto, TruckNote, TruckDocument, Repo, Evaluation, ProductionOrder}
   import Ecto.Query
+  import Phoenix.HTML
   
   @uploads_dir Path.expand("priv/static/uploads")
 
@@ -21,12 +22,20 @@ defmodule EvaaCrmWebGaepell.TruckProfileLive do
         |> assign(:selected_ticket_for_photo, nil)
         |> assign(:show_fullscreen_photo, false)
         |> assign(:fullscreen_photo, nil)
+        |> assign(:show_fullscreen_pdf, false)
+        |> assign(:fullscreen_pdf, nil)
         |> assign(:show_edit_description_modal, false)
         |> assign(:editing_photo_id, nil)
         |> assign(:editing_photo_description, "")
         |> assign(:show_add_note_modal, false)
         |> assign(:note_changeset, nil)
         |> assign(:selected_ticket_for_note, nil)
+        |> assign(:show_edit_note_modal, false)
+        |> assign(:editing_note_id, nil)
+        |> assign(:editing_note_type, "general")
+        |> assign(:editing_note_content, "")
+        |> assign(:editing_note_ticket_id, nil)
+        |> assign(:editing_note_changeset, nil)
         |> assign(:show_maintenance_photo_fullscreen, false)
         |> assign(:maintenance_fullscreen_photo, nil)
         |> assign(:show_maintenance_photo_comment_modal, false)
@@ -34,20 +43,56 @@ defmodule EvaaCrmWebGaepell.TruckProfileLive do
         |> assign(:maintenance_comment_photo_url, nil)
         |> assign(:show_quotation_preview_modal, false)
         |> assign(:selected_quotation_data, nil)
+        |> assign(:show_document_upload_modal, false)
+        |> assign(:show_document_photo_upload_modal, false)
+        |> assign(:selected_ticket_for_document, nil)
+        |> assign(:expanded_tickets, %{})
+        |> assign(:show_edit_document_description_modal, false)
+        |> assign(:editing_document_id, nil)
+        |> assign(:editing_document_description, "")
+        |> assign(:editing_document_title, "")
+        |> assign(:editing_document_ticket_id, nil)
+        |> assign(:show_technical_info_modal, false)
+        |> assign(:show_edit_box_type_modal, false)
+        |> assign(:show_edit_tire_width_modal, false)
+        |> assign(:show_edit_useful_length_modal, false)
+        |> assign(:show_edit_chassis_width_modal, false)
+        |> assign(:active_tab, "overview")
         |> allow_upload(:truck_photos, accept: ~w(.jpg .jpeg .png .gif), max_entries: 5, max_file_size: 8_000_000, auto_upload: true)
+        |> allow_upload(:document_files, accept: ~w(.pdf), max_entries: 1, max_file_size: 10_000_000, auto_upload: false)
+        |> allow_upload(:document_photos, accept: ~w(.jpg .jpeg .png .gif), max_entries: 5, max_file_size: 8_000_000, auto_upload: false)
         |> load_truck_tickets()
         |> load_truck_photos()
         |> load_truck_notes()
-        |> load_truck_quotations()}
+        |> load_truck_quotations()
+        |> load_truck_documents()}
     else
       {:ok, socket |> put_flash(:error, "Camión no encontrado") |> push_navigate(to: "/trucks")}
     end
   end
 
   defp load_truck_tickets(socket) do
-    tickets = Repo.all(from t in MaintenanceTicket, where: t.truck_id == ^socket.assigns.truck.id, order_by: [desc: t.entry_date])
-    assign(socket, :tickets, tickets)
+    # Cargar tickets de mantenimiento
+    maintenance_tickets = Repo.all(from t in MaintenanceTicket, where: t.truck_id == ^socket.assigns.truck.id, order_by: [desc: t.entry_date])
+    
+    # Cargar evaluaciones
+    evaluations = Repo.all(from e in EvaaCrmGaepell.Evaluation, where: e.truck_id == ^socket.assigns.truck.id, order_by: [desc: e.inserted_at])
+    
+    # Cargar órdenes de producción (filtrar por placa del camión)
+    production_orders = Repo.all(from po in EvaaCrmGaepell.ProductionOrder, where: po.license_plate == ^socket.assigns.truck.license_plate, order_by: [desc: po.inserted_at])
+    
+    # Combinar todos los tickets y ordenarlos por fecha
+    all_tickets = (maintenance_tickets ++ evaluations ++ production_orders)
+    |> Enum.sort_by(&get_ticket_date/1, {:desc, Date})
+    
+    assign(socket, :tickets, maintenance_tickets)
+    |> assign(:all_tickets, all_tickets)
   end
+
+  # Función auxiliar para obtener la fecha de un ticket
+  def get_ticket_date(%MaintenanceTicket{} = ticket), do: ticket.entry_date
+  def get_ticket_date(%Evaluation{} = ticket), do: ticket.inserted_at
+  def get_ticket_date(%ProductionOrder{} = ticket), do: ticket.inserted_at
 
   defp load_truck_photos(socket) do
     photos = Repo.all(
@@ -77,6 +122,355 @@ defmodule EvaaCrmWebGaepell.TruckProfileLive do
       preload: [:user, :maintenance_ticket, :production_order]
     )
     assign(socket, :truck_quotations, quotations)
+  end
+
+  # Helper functions for complex class attributes
+  defp truck_status_classes(truck) do
+    if truck.status == "active" do
+      "bg-green-500 text-white border-0 shadow-lg px-3 py-1 rounded-full text-sm"
+    else
+      "bg-orange-500 text-white border-0 shadow-lg px-3 py-1 rounded-full text-sm"
+    end
+  end
+
+  defp truck_status_label(truck) do
+    if truck.status == "active", do: "Activo", else: "Mantenimiento"
+  end
+
+  # Helper functions for tab navigation classes
+  defp tab_classes(active_tab, current_tab) do
+    if active_tab == current_tab do
+      "bg-white dark:bg-slate-700 shadow-md text-slate-900 dark:text-slate-100"
+    else
+      "text-slate-700 dark:text-slate-300"
+    end
+  end
+
+  # Helper functions for ticket display
+  def evaluation_type_label(%MaintenanceTicket{} = ticket) do
+    case ticket.evaluation_type do
+      "maintenance" -> "Mantenimiento"
+      "warranty" -> "Garantía"
+      "inspection" -> "Inspección"
+      "repair" -> "Reparación"
+      _ -> "General"
+    end
+  end
+  
+  def evaluation_type_label(%Evaluation{} = ticket) do
+    case ticket.evaluation_type do
+      "garantia" -> "Evaluación de Garantía"
+      "colision" -> "Evaluación de Colisión"
+      "desgaste" -> "Evaluación de Desgaste"
+      "otro" -> "Evaluación General"
+      _ -> "Evaluación"
+    end
+  end
+  
+  def evaluation_type_label(%ProductionOrder{} = _ticket) do
+    "Orden de Producción"
+  end
+
+  def status_label(%MaintenanceTicket{} = ticket) do
+    case ticket.status do
+      "check_in" -> "Check-in"
+      "in_progress" -> "En Progreso"
+      "completed" -> "Completado"
+      "cancelled" -> "Cancelado"
+      _ -> "Pendiente"
+    end
+  end
+  
+  def status_label(%Evaluation{} = ticket) do
+    case ticket.status do
+      "pending" -> "Pendiente"
+      "in_progress" -> "En Progreso"
+      "completed" -> "Completado"
+      "cancelled" -> "Cancelado"
+      _ -> "Pendiente"
+    end
+  end
+  
+  def status_label(%ProductionOrder{} = ticket) do
+    case ticket.status do
+      "new_order" -> "Nueva Orden"
+      "reception" -> "Recepción"
+      "assembly" -> "Ensamblaje"
+      "mounting" -> "Montaje"
+      "final_check" -> "Final Check"
+      "completed" -> "Completado"
+      "cancelled" -> "Cancelado"
+      _ -> "Pendiente"
+    end
+  end
+
+  def status_classes(%MaintenanceTicket{} = ticket) do
+    case ticket.status do
+      "check_in" -> "bg-blue-500 text-white border-0 shadow-lg px-3 py-1 rounded-full text-sm"
+      "in_progress" -> "bg-yellow-500 text-white border-0 shadow-lg px-3 py-1 rounded-full text-sm"
+      "completed" -> "bg-green-500 text-white border-0 shadow-lg px-3 py-1 rounded-full text-sm"
+      "cancelled" -> "bg-red-500 text-white border-0 shadow-lg px-3 py-1 rounded-full text-sm"
+      _ -> "bg-gray-500 text-white border-0 shadow-lg px-3 py-1 rounded-full text-sm"
+    end
+  end
+  
+  def status_classes(%Evaluation{} = ticket) do
+    case ticket.status do
+      "pending" -> "bg-gray-500 text-white border-0 shadow-lg px-3 py-1 rounded-full text-sm"
+      "in_progress" -> "bg-yellow-500 text-white border-0 shadow-lg px-3 py-1 rounded-full text-sm"
+      "completed" -> "bg-green-500 text-white border-0 shadow-lg px-3 py-1 rounded-full text-sm"
+      "cancelled" -> "bg-red-500 text-white border-0 shadow-lg px-3 py-1 rounded-full text-sm"
+      _ -> "bg-gray-500 text-white border-0 shadow-lg px-3 py-1 rounded-full text-sm"
+    end
+  end
+  
+  def status_classes(%ProductionOrder{} = ticket) do
+    case ticket.status do
+      "new_order" -> "bg-blue-500 text-white border-0 shadow-lg px-3 py-1 rounded-full text-sm"
+      "reception" -> "bg-purple-500 text-white border-0 shadow-lg px-3 py-1 rounded-full text-sm"
+      "assembly" -> "bg-yellow-500 text-white border-0 shadow-lg px-3 py-1 rounded-full text-sm"
+      "mounting" -> "bg-orange-500 text-white border-0 shadow-lg px-3 py-1 rounded-full text-sm"
+      "final_check" -> "bg-indigo-500 text-white border-0 shadow-lg px-3 py-1 rounded-full text-sm"
+      "completed" -> "bg-green-500 text-white border-0 shadow-lg px-3 py-1 rounded-full text-sm"
+      "cancelled" -> "bg-red-500 text-white border-0 shadow-lg px-3 py-1 rounded-full text-sm"
+      _ -> "bg-gray-500 text-white border-0 shadow-lg px-3 py-1 rounded-full text-sm"
+    end
+  end
+
+  def specialist_name(%MaintenanceTicket{} = ticket) do
+    if ticket.specialist_id do
+      "Especialista"
+    else
+      "Sin asignar"
+    end
+  end
+  
+  def specialist_name(%Evaluation{} = _ticket) do
+    "Evaluador"
+  end
+  
+  def specialist_name(%ProductionOrder{} = _ticket) do
+    "Producción"
+  end
+
+  def total_cost(%MaintenanceTicket{} = ticket) do
+    ticket.estimated_repair_cost
+  end
+  
+  def total_cost(%Evaluation{} = ticket) do
+    ticket.estimated_cost
+  end
+  
+  def total_cost(%ProductionOrder{} = ticket) do
+    ticket.total_cost
+  end
+
+  # Función para obtener el icono según el tipo de ticket
+  def get_ticket_icon(%MaintenanceTicket{} = _ticket) do
+    Phoenix.HTML.raw(~s(<svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+    </svg>))
+  end
+  
+  def get_ticket_icon(%Evaluation{} = _ticket) do
+    Phoenix.HTML.raw(~s(<svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+    </svg>))
+  end
+  
+  def get_ticket_icon(%ProductionOrder{} = _ticket) do
+    Phoenix.HTML.raw(~s(<svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+    </svg>))
+  end
+
+  defp load_truck_documents(socket) do
+    documents = Repo.all(
+      from d in EvaaCrmGaepell.TruckDocument,
+      where: d.truck_id == ^socket.assigns.truck.id,
+      order_by: [desc: d.uploaded_at],
+      preload: [:user, :maintenance_ticket]
+    )
+    assign(socket, :truck_documents, documents)
+  end
+
+
+
+  @impl true
+  def handle_event("set_active_tab", %{"tab" => tab}, socket) do
+    {:noreply, assign(socket, :active_tab, tab)}
+  end
+
+  @impl true
+  def handle_event("show_document_upload_modal", _params, socket) do
+    {:noreply, socket
+     |> assign(:show_document_upload_modal, true)}
+  end
+
+  @impl true
+  def handle_event("hide_document_upload_modal", _params, socket) do
+    {:noreply, assign(socket, :show_document_upload_modal, false)}
+  end
+
+  @impl true
+  def handle_event("show_document_photo_upload_modal", _params, socket) do
+    IO.puts("=== SHOW DOCUMENT PHOTO UPLOAD MODAL ===")
+    {:noreply, socket
+     |> assign(:show_document_photo_upload_modal, true)}
+  end
+
+  @impl true
+  def handle_event("hide_document_photo_upload_modal", _params, socket) do
+    IO.puts("=== HIDE DOCUMENT PHOTO UPLOAD MODAL ===")
+    {:noreply, assign(socket, :show_document_photo_upload_modal, false)}
+  end
+
+  @impl true
+  def handle_event("select_ticket_for_document", %{"ticket_id" => ticket_id}, socket) do
+    ticket_id = if ticket_id == "", do: nil, else: String.to_integer(ticket_id)
+    {:noreply, assign(socket, :selected_ticket_for_document, ticket_id)}
+  end
+
+  @impl true
+  def handle_event("toggle_ticket_details", %{"ticket-id" => ticket_id}, socket) do
+    ticket_id = String.to_integer(ticket_id)
+    expanded_tickets = socket.assigns.expanded_tickets
+    
+    # Toggle el estado del ticket
+    new_expanded_tickets = if Map.get(expanded_tickets, ticket_id, false) do
+      Map.delete(expanded_tickets, ticket_id)
+    else
+      Map.put(expanded_tickets, ticket_id, true)
+    end
+    
+    {:noreply, assign(socket, :expanded_tickets, new_expanded_tickets)}
+  end
+
+  @impl true
+  def handle_event("upload_document", params, socket) do
+    IO.puts("=== UPLOAD DOCUMENT DEBUG ===")
+    IO.puts("Params: #{inspect(params)}")
+    
+    title = params["title"] || ""
+    description = params["description"] || ""
+    ticket_id = params["ticket_id"] || ""
+    
+    IO.puts("Title: #{title}")
+    IO.puts("Description: #{description}")
+    IO.puts("Ticket ID: #{ticket_id}")
+    
+    # Convertir ticket_id vacío a nil
+    ticket_id = if ticket_id == "", do: nil, else: String.to_integer(ticket_id)
+    
+    # Check if there are any files selected
+    entries = socket.assigns.uploads.document_files.entries
+    IO.puts("Upload entries: #{inspect(entries)}")
+    IO.puts("Number of entries: #{length(entries)}")
+    
+    all_present = length(entries) > 0
+    
+    IO.puts("All present: #{all_present}")
+    
+    cond do
+      !all_present ->
+        {:noreply, 
+         socket
+         |> put_flash(:error, "Por favor selecciona un archivo PDF")
+         |> assign(:show_document_upload_modal, true)}
+      
+      true ->
+        case save_document(socket, "pdf", title, description, ticket_id) do
+          {:ok, _} ->
+            {:noreply, 
+             socket
+             |> put_flash(:success, "Documento PDF subido exitosamente")
+             |> assign(:show_document_upload_modal, false)
+             |> load_truck_documents()}
+          
+          {:error, :no_files} ->
+            {:noreply, 
+             socket
+             |> put_flash(:error, "Por favor selecciona un archivo PDF")
+             |> assign(:show_document_upload_modal, true)}
+          
+          {:error, _} ->
+            {:noreply, 
+             socket
+             |> put_flash(:error, "Error al subir el documento")
+             |> assign(:show_document_upload_modal, false)}
+        end
+    end
+  end
+
+  @impl true
+  def handle_event("upload_document_photo", params, socket) do
+    IO.puts("=== UPLOAD DOCUMENT PHOTO DEBUG ===")
+    IO.puts("Params: #{inspect(params)}")
+    
+    title = params["title"] || ""
+    description = params["description"] || ""
+    ticket_id = params["ticket_id"] || ""
+    
+    IO.puts("Title: #{title}")
+    IO.puts("Description: #{description}")
+    IO.puts("Ticket ID: #{ticket_id}")
+    
+    # Convertir ticket_id vacío a nil
+    ticket_id = if ticket_id == "", do: nil, else: String.to_integer(ticket_id)
+    
+    # Check if there are any files selected
+    entries = socket.assigns.uploads.document_photos.entries
+    IO.puts("Upload entries: #{inspect(entries)}")
+    IO.puts("Number of entries: #{length(entries)}")
+    
+    all_present = length(entries) > 0
+    
+    IO.puts("All present: #{all_present}")
+    
+    cond do
+      !all_present ->
+        {:noreply, 
+         socket
+         |> put_flash(:error, "Por favor selecciona al menos una foto")
+         |> assign(:show_document_photo_upload_modal, true)}
+      
+      true ->
+        case save_document(socket, "photo", title, description, ticket_id) do
+          {:ok, _} ->
+            {:noreply, 
+             socket
+             |> put_flash(:success, "Fotos de documento subidas exitosamente")
+             |> assign(:show_document_photo_upload_modal, false)
+             |> load_truck_documents()}
+          
+          {:error, :no_files} ->
+            {:noreply, 
+             socket
+             |> put_flash(:error, "Por favor selecciona al menos una foto")
+             |> assign(:show_document_photo_upload_modal, true)}
+          
+          {:error, _} ->
+            {:noreply, 
+             socket
+             |> put_flash(:error, "Error al subir las fotos de documento")
+             |> assign(:show_document_photo_upload_modal, false)}
+        end
+    end
+  end
+
+
+
+  @impl true
+  def handle_event("validate_document_upload", %{"document" => _params}, socket) do
+    # Validación del formulario de documento
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("validate_document_photo_upload", %{"document_photo" => _params}, socket) do
+    # Validación del formulario de foto de documento
+    {:noreply, socket}
   end
 
   @impl true
@@ -486,7 +880,145 @@ defmodule EvaaCrmWebGaepell.TruckProfileLive do
     {:noreply, socket |> assign(:show_edit_form, false) |> assign(:editing_truck, nil)}
   end
 
+  @impl true
+  def handle_event("update_truck", %{"truck" => truck_params}, socket) do
+    case Repo.update(Truck.changeset(socket.assigns.truck, truck_params)) do
+      {:ok, updated_truck} ->
+        # Recargar el truck desde la base de datos para asegurar que los datos estén actualizados
+        reloaded_truck = Repo.get(Truck, socket.assigns.truck.id)
+        {:noreply, 
+          socket 
+          |> assign(:truck, reloaded_truck)
+          |> assign(:show_edit_form, false)
+          |> assign(:editing_truck, nil)
+          |> put_flash(:info, "Camión actualizado correctamente")
+        }
+      {:error, changeset} ->
+        {:noreply, 
+          socket 
+          |> assign(:editing_truck, changeset)
+          |> put_flash(:error, "Error al actualizar el camión")
+        }
+    end
+  end
 
+  # Event handlers para los modales de edición de las cards técnicas
+  
+  @impl true
+  def handle_event("edit_box_type", _params, socket) do
+    {:noreply, assign(socket, :show_edit_box_type_modal, true)}
+  end
+
+  @impl true
+  def handle_event("hide_edit_box_type_modal", _params, socket) do
+    {:noreply, assign(socket, :show_edit_box_type_modal, false)}
+  end
+
+  @impl true
+  def handle_event("update_box_type", %{"truck" => truck_params}, socket) do
+    case Repo.update(Truck.changeset(socket.assigns.truck, truck_params)) do
+      {:ok, updated_truck} ->
+        reloaded_truck = Repo.get(Truck, socket.assigns.truck.id)
+        {:noreply, 
+          socket 
+          |> assign(:truck, reloaded_truck)
+          |> assign(:show_edit_box_type_modal, false)
+          |> put_flash(:info, "Tipo de caja actualizado correctamente")
+        }
+      {:error, _changeset} ->
+        {:noreply, 
+          socket 
+          |> put_flash(:error, "Error al actualizar el tipo de caja")
+        }
+    end
+  end
+
+  @impl true
+  def handle_event("edit_tire_width", _params, socket) do
+    {:noreply, assign(socket, :show_edit_tire_width_modal, true)}
+  end
+
+  @impl true
+  def handle_event("hide_edit_tire_width_modal", _params, socket) do
+    {:noreply, assign(socket, :show_edit_tire_width_modal, false)}
+  end
+
+  @impl true
+  def handle_event("update_tire_width", %{"truck" => truck_params}, socket) do
+    case Repo.update(Truck.changeset(socket.assigns.truck, truck_params)) do
+      {:ok, updated_truck} ->
+        reloaded_truck = Repo.get(Truck, socket.assigns.truck.id)
+        {:noreply, 
+          socket 
+          |> assign(:truck, reloaded_truck)
+          |> assign(:show_edit_tire_width_modal, false)
+          |> put_flash(:info, "Ancho de gomas traseras actualizado correctamente")
+        }
+      {:error, _changeset} ->
+        {:noreply, 
+          socket 
+          |> put_flash(:error, "Error al actualizar el ancho de gomas traseras")
+        }
+    end
+  end
+
+  @impl true
+  def handle_event("edit_useful_length", _params, socket) do
+    {:noreply, assign(socket, :show_edit_useful_length_modal, true)}
+  end
+
+  @impl true
+  def handle_event("hide_edit_useful_length_modal", _params, socket) do
+    {:noreply, assign(socket, :show_edit_useful_length_modal, false)}
+  end
+
+  @impl true
+  def handle_event("update_useful_length", %{"truck" => truck_params}, socket) do
+    case Repo.update(Truck.changeset(socket.assigns.truck, truck_params)) do
+      {:ok, updated_truck} ->
+        reloaded_truck = Repo.get(Truck, socket.assigns.truck.id)
+        {:noreply, 
+          socket 
+          |> assign(:truck, reloaded_truck)
+          |> assign(:show_edit_useful_length_modal, false)
+          |> put_flash(:info, "Largo útil actualizado correctamente")
+        }
+      {:error, _changeset} ->
+        {:noreply, 
+          socket 
+          |> put_flash(:error, "Error al actualizar el largo útil")
+        }
+    end
+  end
+
+  @impl true
+  def handle_event("edit_chassis_width", _params, socket) do
+    {:noreply, assign(socket, :show_edit_chassis_width_modal, true)}
+  end
+
+  @impl true
+  def handle_event("hide_edit_chassis_width_modal", _params, socket) do
+    {:noreply, assign(socket, :show_edit_chassis_width_modal, false)}
+  end
+
+  @impl true
+  def handle_event("update_chassis_width", %{"truck" => truck_params}, socket) do
+    case Repo.update(Truck.changeset(socket.assigns.truck, truck_params)) do
+      {:ok, updated_truck} ->
+        reloaded_truck = Repo.get(Truck, socket.assigns.truck.id)
+        {:noreply, 
+          socket 
+          |> assign(:truck, reloaded_truck)
+          |> assign(:show_edit_chassis_width_modal, false)
+          |> put_flash(:info, "Ancho de chasis actualizado correctamente")
+        }
+      {:error, _changeset} ->
+        {:noreply, 
+          socket 
+          |> put_flash(:error, "Error al actualizar el ancho de chasis")
+        }
+    end
+  end
 
   @impl true
   def handle_event("show_photo_gallery", _params, socket) do
@@ -576,7 +1108,15 @@ defmodule EvaaCrmWebGaepell.TruckProfileLive do
 
   @impl true
   def handle_event("cancel-upload", %{"ref" => ref}, socket) do
-    {:noreply, cancel_upload(socket, :truck_photos, ref)}
+    IO.puts("=== CANCEL UPLOAD ===")
+    IO.puts("Ref: #{ref}")
+    
+    # Intentar cancelar en ambos tipos de uploads
+    socket = cancel_upload(socket, :truck_photos, ref)
+    socket = cancel_upload(socket, :document_photos, ref)
+    socket = cancel_upload(socket, :document_files, ref)
+    
+    {:noreply, socket}
   end
 
   @impl true
@@ -591,6 +1131,21 @@ defmodule EvaaCrmWebGaepell.TruckProfileLive do
 
   @impl true
   def handle_event("photos_selected", _params, socket) do
+    IO.puts("=== PHOTOS SELECTED ===")
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("document_photos_selected", _params, socket) do
+    IO.puts("=== DOCUMENT PHOTOS SELECTED ===")
+    IO.puts("Entries: #{inspect(socket.assigns.uploads.document_photos.entries)}")
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("document_files_selected", _params, socket) do
+    IO.puts("=== DOCUMENT FILES SELECTED ===")
+    IO.puts("Entries: #{inspect(socket.assigns.uploads.document_files.entries)}")
     {:noreply, socket}
   end
 
@@ -616,6 +1171,15 @@ defmodule EvaaCrmWebGaepell.TruckProfileLive do
       socket 
       |> assign(:show_fullscreen_photo, false)
       |> assign(:fullscreen_photo, nil)
+    }
+  end
+
+  @impl true
+  def handle_event("hide_fullscreen_pdf", _params, socket) do
+    {:noreply, 
+      socket 
+      |> assign(:show_fullscreen_pdf, false)
+      |> assign(:fullscreen_pdf, nil)
     }
   end
 
@@ -673,6 +1237,108 @@ defmodule EvaaCrmWebGaepell.TruckProfileLive do
       end
     else
       {:noreply, put_flash(socket, :error, "Foto no encontrada")}
+    end
+  end
+
+  @impl true
+  def handle_event("delete_photo", %{"photo-id" => photo_id}, socket) do
+    photo_id = String.to_integer(photo_id)
+    photo = Repo.get(TruckPhoto, photo_id)
+    
+    if photo do
+      # Eliminar el archivo físico
+      photo_path = Path.join(File.cwd!(), "priv/static#{photo.photo_path}")
+      
+      case delete_photo_file(photo_path) do
+        {:ok, _} ->
+          # Eliminar el registro de la base de datos
+          case Repo.delete(photo) do
+            {:ok, _} ->
+              {:noreply, 
+                socket 
+                |> assign(:show_fullscreen_photo, false)
+                |> assign(:fullscreen_photo, nil)
+                |> load_truck_photos()
+                |> put_flash(:info, "Foto eliminada correctamente")
+              }
+            {:error, _} ->
+              {:noreply, put_flash(socket, :error, "Error al eliminar la foto de la base de datos")}
+          end
+        {:error, reason} ->
+          {:noreply, put_flash(socket, :error, "Error al eliminar el archivo: #{reason}")}
+      end
+    else
+      {:noreply, put_flash(socket, :error, "Foto no encontrada")}
+    end
+  end
+
+  @impl true
+  def handle_event("delete_document_photo", %{"document-id" => document_id}, socket) do
+    IO.puts("=== DELETE DOCUMENT PHOTO DEBUG ===")
+    IO.puts("Document ID: #{document_id}")
+    
+    document_id = String.to_integer(document_id)
+    document = Repo.get(TruckDocument, document_id)
+    
+    if document && document.document_type == "photo" do
+      # Eliminar el archivo físico
+      file_path = Path.join(File.cwd!(), "priv/static#{document.file_path}")
+      
+      case delete_photo_file(file_path) do
+        {:ok, _} ->
+          # Eliminar el registro de la base de datos
+          case Repo.delete(document) do
+            {:ok, _} ->
+              {:noreply, 
+                socket 
+                |> assign(:show_fullscreen_photo, false)
+                |> assign(:fullscreen_photo, nil)
+                |> load_truck_documents()
+                |> put_flash(:info, "Foto de documento eliminada correctamente")
+              }
+            {:error, _} ->
+              {:noreply, put_flash(socket, :error, "Error al eliminar la foto de documento de la base de datos")}
+          end
+        {:error, reason} ->
+          {:noreply, put_flash(socket, :error, "Error al eliminar el archivo: #{reason}")}
+      end
+    else
+      {:noreply, put_flash(socket, :error, "Foto de documento no encontrada")}
+    end
+  end
+
+  @impl true
+  def handle_event("delete_document_pdf", %{"document-id" => document_id}, socket) do
+    IO.puts("=== DELETE DOCUMENT PDF DEBUG ===")
+    IO.puts("Document ID: #{document_id}")
+    
+    document_id = String.to_integer(document_id)
+    document = Repo.get(TruckDocument, document_id)
+    
+    if document && document.document_type == "pdf" do
+      # Eliminar el archivo físico
+      file_path = Path.join(File.cwd!(), "priv/static#{document.file_path}")
+      
+      case delete_photo_file(file_path) do
+        {:ok, _} ->
+          # Eliminar el registro de la base de datos
+          case Repo.delete(document) do
+            {:ok, _} ->
+              {:noreply, 
+                socket 
+                |> assign(:show_fullscreen_pdf, false)
+                |> assign(:fullscreen_pdf, nil)
+                |> load_truck_documents()
+                |> put_flash(:info, "PDF de documento eliminado correctamente")
+              }
+            {:error, _} ->
+              {:noreply, put_flash(socket, :error, "Error al eliminar el PDF de documento de la base de datos")}
+          end
+        {:error, reason} ->
+          {:noreply, put_flash(socket, :error, "Error al eliminar el archivo: #{reason}")}
+      end
+    else
+      {:noreply, put_flash(socket, :error, "PDF de documento no encontrado")}
     end
   end
 
@@ -919,4 +1585,361 @@ defmodule EvaaCrmWebGaepell.TruckProfileLive do
       {:noreply, put_flash(socket, :error, "PDF no encontrado")}
     end
   end
-end 
+
+  @impl true
+  def handle_event("view_document_photo", %{"document-id" => document_id}, socket) do
+    IO.puts("=== VIEW DOCUMENT PHOTO DEBUG ===")
+    IO.puts("Document ID: #{document_id}")
+    
+    document_id = String.to_integer(document_id)
+    document = Repo.get(TruckDocument, document_id)
+    
+    IO.puts("Document found: #{inspect(document)}")
+    IO.puts("Document type: #{document && document.document_type}")
+    IO.puts("Truck ID match: #{document && document.truck_id == socket.assigns.truck.id}")
+
+    if document && document.truck_id == socket.assigns.truck.id && document.document_type == "photo" do
+      # Crear un objeto compatible con el modal de pantalla completa
+      photo_object = %{
+        id: document.id,
+        photo_path: document.file_path,
+        photo_type: "document",
+        description: document.description,
+        maintenance_ticket_id: document.maintenance_ticket_id,
+        uploaded_at: document.uploaded_at
+      }
+      
+      IO.puts("Photo object created: #{inspect(photo_object)}")
+      IO.puts("Setting show_fullscreen_photo to true")
+      IO.puts("Setting fullscreen_photo to: #{inspect(photo_object)}")
+      
+      socket = socket
+               |> assign(:show_fullscreen_photo, true)
+               |> assign(:fullscreen_photo, photo_object)
+      
+      IO.puts("Socket assigns after update: show_fullscreen_photo=#{socket.assigns.show_fullscreen_photo}")
+      IO.puts("Socket assigns after update: fullscreen_photo=#{inspect(socket.assigns.fullscreen_photo)}")
+      
+      {:noreply, socket}
+    else
+      IO.puts("Document validation failed")
+      {:noreply, put_flash(socket, :error, "Foto de documento no encontrada")}
+    end
+  end
+
+  @impl true
+  def handle_event("view_document_pdf", %{"document-id" => document_id}, socket) do
+    IO.puts("=== VIEW DOCUMENT PDF DEBUG ===")
+    IO.puts("Document ID: #{document_id}")
+    
+    document_id = String.to_integer(document_id)
+    document = Repo.get(TruckDocument, document_id)
+    
+    IO.puts("Document found: #{inspect(document)}")
+    IO.puts("Document type: #{document && document.document_type}")
+    IO.puts("Truck ID match: #{document && document.truck_id == socket.assigns.truck.id}")
+
+    if document && document.truck_id == socket.assigns.truck.id && document.document_type == "pdf" do
+      IO.puts("PDF document validated, opening modal")
+      IO.puts("Setting show_fullscreen_pdf to true")
+      IO.puts("Setting fullscreen_pdf to: #{inspect(document)}")
+      
+      socket = socket
+               |> assign(:show_fullscreen_pdf, true)
+               |> assign(:fullscreen_pdf, document)
+      
+      IO.puts("Socket assigns after update: show_fullscreen_pdf=#{socket.assigns.show_fullscreen_pdf}")
+      IO.puts("Socket assigns after update: fullscreen_pdf=#{inspect(socket.assigns.fullscreen_pdf)}")
+      
+      {:noreply, socket}
+    else
+      IO.puts("PDF document validation failed")
+      {:noreply, put_flash(socket, :error, "PDF de documento no encontrado")}
+    end
+  end
+
+  # Función para eliminar archivo físico de foto
+  defp delete_photo_file(file_path) do
+    case File.exists?(file_path) do
+      true ->
+        case File.rm(file_path) do
+          :ok -> {:ok, :deleted}
+          {:error, reason} -> {:error, "No se pudo eliminar el archivo: #{reason}"}
+        end
+      false ->
+        # Si el archivo no existe, consideramos que ya fue eliminado
+        {:ok, :already_deleted}
+    end
+  end
+
+  # Función para guardar documentos
+  defp save_document(socket, document_type, title, description, ticket_id) do
+    IO.puts("=== SAVE DOCUMENT DEBUG ===")
+    IO.puts("Document type: #{document_type}")
+    IO.puts("Title: #{title}")
+    IO.puts("Description: #{description}")
+    IO.puts("Ticket ID: #{ticket_id}")
+    
+    upload_name = if document_type == "pdf", do: :document_files, else: :document_photos
+    IO.puts("Upload name: #{upload_name}")
+    
+
+    
+    uploaded_files = 
+      consume_uploaded_entries(socket, upload_name, fn %{path: path}, entry ->
+        # Generate a unique filename with original extension
+        ext = Path.extname(entry.client_name)
+        filename = "truck_#{socket.assigns.truck.id}_document_#{document_type}_#{System.system_time()}_#{:rand.uniform(1000)}#{ext}"
+        dest = Path.join(@uploads_dir, filename)
+        
+        # Ensure uploads directory exists
+        File.mkdir_p!(Path.dirname(dest))
+        
+        # Copy the uploaded file
+        File.cp!(path, dest)
+        
+        # Return the filename for database storage
+        "/uploads/#{filename}"
+      end)
+    
+    IO.puts("Uploaded files: #{inspect(uploaded_files)}")
+    
+    case uploaded_files do
+      [] ->
+        IO.puts("No files uploaded")
+        {:error, :no_files}
+      
+      files ->
+        IO.puts("Files to save: #{inspect(files)}")
+        IO.puts("Document type: #{document_type}")
+        # Save each document to the database
+        results = Enum.map(files, fn filename ->
+          document_attrs = %{
+            file_path: filename,
+            title: title,
+            description: description,
+            document_type: document_type,
+            truck_id: socket.assigns.truck.id,
+            maintenance_ticket_id: ticket_id,
+            user_id: socket.assigns.current_user.id,
+            uploaded_at: DateTime.utc_now()
+          }
+          
+          %TruckDocument{}
+          |> TruckDocument.changeset(document_attrs)
+          |> Repo.insert()
+        end)
+        
+        # Check if all documents were saved successfully
+        if Enum.all?(results, fn {status, _} -> status == :ok end) do
+          IO.puts("All documents saved successfully")
+          {:ok, results}
+        else
+          # Log the errors for debugging
+          failed_results = Enum.filter(results, fn {status, _} -> status == :error end)
+          IO.inspect(failed_results, label: "Failed document saves")
+          IO.puts("Some documents failed to save")
+          {:error, :save_failed}
+        end
+    end
+  end
+
+  @impl true
+  def handle_event("edit_document_description", %{"document-id" => document_id}, socket) do
+    IO.puts("=== EDIT DOCUMENT DESCRIPTION DEBUG ===")
+    IO.puts("Document ID: #{document_id}")
+    
+    document_id = String.to_integer(document_id)
+    document = Repo.get(TruckDocument, document_id)
+    
+    if document do
+      IO.puts("Document found: #{inspect(document)}")
+      {:noreply, 
+        socket 
+        |> assign(:show_fullscreen_pdf, false)
+        |> assign(:fullscreen_pdf, nil)
+        |> assign(:show_edit_document_description_modal, true)
+        |> assign(:editing_document_id, document_id)
+        |> assign(:editing_document_description, document.description || "")
+        |> assign(:editing_document_title, document.title || "")
+        |> assign(:editing_document_ticket_id, document.maintenance_ticket_id)
+      }
+    else
+      IO.puts("Document not found")
+      {:noreply, put_flash(socket, :error, "Documento no encontrado")}
+    end
+  end
+
+  @impl true
+  def handle_event("hide_edit_document_description_modal", _params, socket) do
+    {:noreply, 
+      socket 
+      |> assign(:show_edit_document_description_modal, false)
+      |> assign(:editing_document_id, nil)
+      |> assign(:editing_document_description, "")
+      |> assign(:editing_document_title, "")
+      |> assign(:editing_document_ticket_id, nil)
+    }
+  end
+
+  @impl true
+  def handle_event("update_document_description", %{"document_id" => document_id, "title" => title, "description" => description, "ticket_id" => ticket_id}, socket) do
+    IO.puts("=== UPDATE DOCUMENT DESCRIPTION DEBUG ===")
+    IO.puts("Document ID: #{document_id}")
+    IO.puts("Title: #{title}")
+    IO.puts("Description: #{description}")
+    IO.puts("Ticket ID: #{ticket_id}")
+    
+    document_id = String.to_integer(document_id)
+    document = Repo.get(TruckDocument, document_id)
+    
+    # Convertir ticket_id vacío a nil
+    ticket_id = if ticket_id == "", do: nil, else: String.to_integer(ticket_id)
+    
+    if document do
+      case Repo.update(TruckDocument.changeset(document, %{title: title, description: description, maintenance_ticket_id: ticket_id})) do
+        {:ok, _updated_document} ->
+          {:noreply, 
+            socket 
+            |> assign(:show_edit_document_description_modal, false)
+            |> assign(:editing_document_id, nil)
+            |> assign(:editing_document_description, "")
+            |> assign(:editing_document_title, "")
+            |> assign(:editing_document_ticket_id, nil)
+            |> load_truck_documents()
+            |> put_flash(:info, "Documento actualizado correctamente")
+          }
+        {:error, changeset} ->
+          IO.puts("Error updating document: #{inspect(changeset)}")
+          {:noreply, put_flash(socket, :error, "Error al actualizar el documento")}
+      end
+    else
+      {:noreply, put_flash(socket, :error, "Documento no encontrado")}
+    end
+  end
+
+  @impl true
+  def handle_event("edit_truck_note", %{"note_id" => note_id}, socket) do
+    IO.puts("=== EDIT TRUCK NOTE DEBUG ===")
+    IO.puts("Note ID: #{note_id}")
+    
+    note_id = String.to_integer(note_id)
+    note = Repo.get(TruckNote, note_id)
+    
+    if note do
+      IO.puts("Note found: #{inspect(note)}")
+      
+      # Crear un changeset para la edición
+      changeset = TruckNote.changeset(note, %{})
+      
+      {:noreply, 
+        socket 
+        |> assign(:show_edit_note_modal, true)
+        |> assign(:editing_note_id, note_id)
+        |> assign(:editing_note_type, note.note_type || "general")
+        |> assign(:editing_note_content, note.content || "")
+        |> assign(:editing_note_ticket_id, note.maintenance_ticket_id)
+        |> assign(:editing_note_changeset, changeset)
+      }
+    else
+      IO.puts("Note not found")
+      {:noreply, put_flash(socket, :error, "Nota no encontrada")}
+    end
+  end
+
+  @impl true
+  def handle_event("hide_edit_note_modal", _params, socket) do
+    {:noreply, 
+      socket 
+      |> assign(:show_edit_note_modal, false)
+      |> assign(:editing_note_id, nil)
+      |> assign(:editing_note_type, "general")
+      |> assign(:editing_note_content, "")
+      |> assign(:editing_note_ticket_id, nil)
+      |> assign(:editing_note_changeset, nil)
+    }
+  end
+
+  @impl true
+  def handle_event("update_truck_note", %{"note_id" => note_id, "truck_note" => note_params, "ticket_id" => ticket_id}, socket) do
+    IO.puts("=== UPDATE TRUCK NOTE DEBUG ===")
+    IO.puts("Note ID: #{note_id}")
+    IO.puts("Note params: #{inspect(note_params)}")
+    IO.puts("Ticket ID: #{ticket_id}")
+    
+    note_id = String.to_integer(note_id)
+    note = Repo.get(TruckNote, note_id)
+    
+    # Convertir ticket_id vacío a nil
+    ticket_id = if ticket_id == "", do: nil, else: String.to_integer(ticket_id)
+    
+    if note do
+      # Preparar los parámetros para la actualización - asegurar que todas las claves sean strings
+      update_params = Map.merge(note_params, %{"maintenance_ticket_id" => ticket_id})
+      
+      case Repo.update(TruckNote.changeset(note, update_params)) do
+        {:ok, _updated_note} ->
+          {:noreply, 
+            socket 
+            |> assign(:show_edit_note_modal, false)
+            |> assign(:editing_note_id, nil)
+            |> assign(:editing_note_type, "general")
+            |> assign(:editing_note_content, "")
+            |> assign(:editing_note_ticket_id, nil)
+            |> assign(:editing_note_changeset, nil)
+            |> load_truck_notes()
+            |> put_flash(:info, "Nota actualizada correctamente")
+          }
+        {:error, changeset} ->
+          IO.puts("Error updating note: #{inspect(changeset)}")
+          {:noreply, put_flash(socket, :error, "Error al actualizar la nota")}
+      end
+    else
+      {:noreply, put_flash(socket, :error, "Nota no encontrada")}
+    end
+  end
+
+  # Technical Info Modal Events
+  @impl true
+  def handle_event("show_technical_info_modal", _params, socket) do
+    {:noreply, assign(socket, :show_technical_info_modal, true)}
+  end
+
+  @impl true
+  def handle_event("hide_technical_info_modal", _params, socket) do
+    {:noreply, assign(socket, :show_technical_info_modal, false)}
+  end
+
+  @impl true
+  def handle_event("update_technical_info", %{"rear_tire_width" => rear_tire_width, "chassis_length" => chassis_length, "chassis_width" => chassis_width}, socket) do
+    IO.puts("=== UPDATE TECHNICAL INFO DEBUG ===")
+    IO.puts("Original values - rear_tire_width: #{rear_tire_width}, chassis_length: #{chassis_length}, chassis_width: #{chassis_width}")
+    
+    # Preparar los parámetros para la actualización
+    update_params = %{
+      "rear_tire_width" => String.to_integer(rear_tire_width),
+      "chassis_length" => String.to_integer(chassis_length),
+      "chassis_width" => String.to_integer(chassis_width)
+    }
+    
+    IO.puts("Update params: #{inspect(update_params)}")
+    IO.puts("Current truck values: rear_tire_width=#{socket.assigns.truck.rear_tire_width}, chassis_length=#{socket.assigns.truck.chassis_length}, chassis_width=#{socket.assigns.truck.chassis_width}")
+    
+    case Repo.update(Truck.changeset(socket.assigns.truck, update_params)) do
+      {:ok, _updated_truck} ->
+        # Recargar el truck desde la base de datos para asegurar que los datos estén actualizados
+        reloaded_truck = Repo.get(Truck, socket.assigns.truck.id)
+        IO.puts("Reloaded truck values: rear_tire_width=#{reloaded_truck.rear_tire_width}, chassis_length=#{reloaded_truck.chassis_length}, chassis_width=#{reloaded_truck.chassis_width}")
+        {:noreply, 
+          socket 
+          |> assign(:truck, reloaded_truck)
+          |> assign(:show_technical_info_modal, false)
+          |> put_flash(:info, "Información técnica actualizada correctamente")
+        }
+      {:error, changeset} ->
+        IO.puts("Error updating technical info: #{inspect(changeset)}")
+        IO.puts("Changeset errors: #{inspect(changeset.errors)}")
+        {:noreply, put_flash(socket, :error, "Error al actualizar la información técnica")}
+    end
+  end
+end

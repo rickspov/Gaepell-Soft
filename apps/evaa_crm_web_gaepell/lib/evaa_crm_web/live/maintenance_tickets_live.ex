@@ -393,16 +393,22 @@ defmodule EvaaCrmWebGaepell.MaintenanceTicketsLive do
 
   @impl true
   def handle_event("update_status", %{"id" => id, "status" => status}, socket) do
+    IO.inspect("update_status called with id: #{id}, status: #{status}", label: "[DEBUG]")
     ticket = Enum.find(socket.assigns.tickets, &(&1.id == String.to_integer(id)))
+    IO.inspect("Found ticket: #{inspect(ticket)}", label: "[DEBUG]")
+    
     if ticket && status in ["check_in", "in_workshop", "final_review", "car_wash", "check_out", "cancelled"] do
       # Usar el método Fleet que registra logs
       case EvaaCrmGaepell.Fleet.update_maintenance_ticket(ticket, %{status: status}, socket.assigns.current_user.id) do
-        {:ok, _} ->
+        {:ok, updated_ticket} ->
+          IO.inspect("Status updated successfully", label: "[DEBUG]")
           {:noreply, socket |> assign(editing_status_id: nil) |> load_tickets()}
-        {:error, _} ->
+        {:error, changeset} ->
+          IO.inspect("Error updating status: #{inspect(changeset.errors)}", label: "[DEBUG]")
           {:noreply, assign(socket, editing_status_id: nil)}
       end
     else
+      IO.inspect("Invalid ticket or status", label: "[DEBUG]")
       {:noreply, assign(socket, editing_status_id: nil)}
     end
   end

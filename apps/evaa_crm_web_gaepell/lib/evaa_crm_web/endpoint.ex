@@ -43,7 +43,7 @@ defmodule EvaaCrmWebGaepell.Endpoint do
     socket "/phoenix/live_reload/socket", Phoenix.LiveReloader.Socket
     plug Phoenix.LiveReloader
     plug Phoenix.CodeReloader
-    plug Phoenix.Ecto.CheckRepoStatus, otp_app: :evaa_crm_web_gaepell
+    # plug Phoenix.Ecto.CheckRepoStatus, otp_app: :evaa_crm_web_gaepell
   end
 
   plug Phoenix.LiveDashboard.RequestLogger,
