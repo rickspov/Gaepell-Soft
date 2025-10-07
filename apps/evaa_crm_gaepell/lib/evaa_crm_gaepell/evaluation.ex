@@ -43,6 +43,7 @@ defmodule EvaaCrmGaepell.Evaluation do
     field :employee_number, :string
     field :authorization_type, :string
     field :special_conditions, :string
+    field :ticket_code, :string
 
     # Campos de check-out (temporalmente comentados hasta que se resuelva el problema de migración)
     # field :checkout_driver_cedula, :string
@@ -63,7 +64,7 @@ defmodule EvaaCrmGaepell.Evaluation do
 
   def changeset(evaluation, attrs) do
     evaluation
-    |> cast(attrs, [:title, :description, :evaluation_type, :evaluation_date, :evaluated_by, :driver_cedula, :location, :damage_areas, :severity_level, :estimated_cost, :notes, :photos, :status, :converted_to_maintenance, :maintenance_ticket_id, :priority, :entry_date, :mileage, :fuel_level, :visible_damage, :responsible_signature, :signature_url, :exit_date, :exit_notes, :color, :deliverer_name, :document_type, :document_number, :deliverer_phone, :company_name, :position, :employee_number, :authorization_type, :special_conditions, :truck_id, :business_id, :specialist_id])
+    |> cast(attrs, [:title, :description, :evaluation_type, :evaluation_date, :evaluated_by, :driver_cedula, :location, :damage_areas, :severity_level, :estimated_cost, :notes, :photos, :status, :converted_to_maintenance, :maintenance_ticket_id, :priority, :entry_date, :mileage, :fuel_level, :visible_damage, :responsible_signature, :signature_url, :exit_date, :exit_notes, :color, :deliverer_name, :document_type, :document_number, :deliverer_phone, :company_name, :position, :employee_number, :authorization_type, :special_conditions, :truck_id, :business_id, :specialist_id, :ticket_code])
     |> validate_required([:title, :truck_id, :business_id, :evaluation_type])
     |> validate_inclusion(:evaluation_type, ["garantia", "colision", "desgaste", "otro"])
     |> validate_inclusion(:severity_level, ["low", "medium", "high", "critical"])
@@ -79,15 +80,22 @@ defmodule EvaaCrmGaepell.Evaluation do
   Crea una evaluación y registra la actividad
   """
   def create_evaluation(attrs, user_id) do
+    # Generar código de ticket si no se proporciona uno
+    attrs_with_code = if Map.has_key?(attrs, "ticket_code") and not is_nil(attrs["ticket_code"]) do
+      attrs
+    else
+      Map.put(attrs, "ticket_code", EvaaCrmGaepell.TicketCodeGenerator.generate_ticket_code(:evaluation))
+    end
+
     # Debug logging
-    IO.inspect(attrs, label: "[DEBUG] Evaluation.create_evaluation attrs")
-    IO.inspect(attrs["damage_areas"], label: "[DEBUG] damage_areas in attrs")
-    IO.inspect(attrs["description"], label: "[DEBUG] description in attrs")
-    IO.inspect(attrs["severity_level"], label: "[DEBUG] severity_level in attrs")
-    IO.inspect(attrs["estimated_cost"], label: "[DEBUG] estimated_cost in attrs")
+    IO.inspect(attrs_with_code, label: "[DEBUG] Evaluation.create_evaluation attrs")
+    IO.inspect(attrs_with_code["damage_areas"], label: "[DEBUG] damage_areas in attrs")
+    IO.inspect(attrs_with_code["description"], label: "[DEBUG] description in attrs")
+    IO.inspect(attrs_with_code["severity_level"], label: "[DEBUG] severity_level in attrs")
+    IO.inspect(attrs_with_code["estimated_cost"], label: "[DEBUG] estimated_cost in attrs")
     
     case %__MODULE__{}
-         |> changeset(attrs)
+         |> changeset(attrs_with_code)
          |> EvaaCrmGaepell.Repo.insert() do
       {:ok, evaluation} ->
         # Debug logging for created evaluation

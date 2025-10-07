@@ -1591,7 +1591,7 @@ defmodule EvaaCrmWebGaepell.TicketWizardLive do
                             <%= truck.brand %> <%= truck.model %>
                           </h4>
                           <p class="text-sm text-gray-600 dark:text-gray-400">
-                            Placa: <%= truck.license_plate %> | Año: <%= truck.year %>
+                            Placa: <%= truck.license_plate %> | Ficha: <%= truck.ficha || "N/A" %>
                           </p>
                           <%= if truck.kilometraje && truck.kilometraje > 0 do %>
                             <p class="text-xs text-gray-500 dark:text-gray-500">

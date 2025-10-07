@@ -205,7 +205,7 @@ defmodule EvaaCrmWebGaepell.TicketDetailLive do
   end
 
   @impl true
-  def handle_event("update_file_description", %{"file_description" => description, "file_index" => index, "file_path" => file_path}, socket) do
+  def handle_event("update_file_description", %{"file_description" => description, "file_index" => index, "file_path" => _file_path}, socket) do
     # Update the file description in the photos array
     photos = get_photos(socket.assigns.ticket, socket.assigns.ticket_type) || []
     index_int = String.to_integer(index)
@@ -231,8 +231,6 @@ defmodule EvaaCrmWebGaepell.TicketDetailLive do
     end
 
     # Update the ticket with the new photos
-    update_params = %{"photos" => updated_photos}
-    
     case update_ticket_photos(socket.assigns.ticket, updated_photos, socket.assigns.ticket_type) do
       {:ok, updated_ticket} ->
         # Add activity log
@@ -860,9 +858,20 @@ defmodule EvaaCrmWebGaepell.TicketDetailLive do
   end
 
   defp update_ticket_status(ticket, status, user_id, ticket_type) do
+    # Preparar parámetros de actualización
+    update_params = %{"status" => status}
+    
+    # Si el estado es "completado", agregar fecha de check-out
+    update_params = if status == "completed" do
+      Map.put(update_params, "exit_date", DateTime.utc_now())
+    else
+      update_params
+    end
+    
     case ticket_type do
-      "maintenance" -> MaintenanceTicket.update_ticket(ticket, %{"status" => status}, user_id)
-      "evaluation" -> Evaluation.update_evaluation(ticket, %{"status" => status}, user_id)
+      "maintenance" -> MaintenanceTicket.update_ticket(ticket, update_params, user_id)
+      "evaluation" -> Evaluation.update_evaluation(ticket, update_params, user_id)
+      "production" -> EvaaCrmGaepell.ProductionOrder.update_production_order(ticket, update_params, user_id)
       _ -> {:error, :invalid_ticket_type}
     end
   end
@@ -997,7 +1006,6 @@ defmodule EvaaCrmWebGaepell.TicketDetailLive do
       "critical" -> "bg-red-500 text-white"
       "high" -> "bg-orange-500 text-white"
       "medium" -> "bg-blue-500 text-white"
-      "low" -> "bg-green-500 text-white"
       _ -> "bg-gray-500 text-white"
     end
   end
@@ -1024,29 +1032,62 @@ defmodule EvaaCrmWebGaepell.TicketDetailLive do
   # Helper functions for template
   defp get_status_color(status) do
     case status do
+      # Estados de evaluación
       "pending" -> "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400"
-      "in-progress" -> "bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400"
+      "in_progress" -> "bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400"
       "completed" -> "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400"
       "cancelled" -> "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400"
+      "converted" -> "bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400"
+      
+      # Estados de mantenimiento
+      "check_in" -> "bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400"
+      "in_workshop" -> "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400"
+      "final_review" -> "bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400"
+      "car_wash" -> "bg-cyan-100 text-cyan-800 dark:bg-cyan-900/20 dark:text-cyan-400"
+      "check_out" -> "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400"
+      "recepcion" -> "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/20 dark:text-indigo-400"
+      
+      # Estados de producción
+      "new_ticket" -> "bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400"
+      "new_order" -> "bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400"
+      "reception" -> "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/20 dark:text-indigo-400"
+      "diagnosis" -> "bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400"
+      "repair" -> "bg-pink-100 text-pink-800 dark:bg-pink-900/20 dark:text-pink-400"
+      "assembly" -> "bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400"
+      "mounting" -> "bg-pink-100 text-pink-800 dark:bg-pink-900/20 dark:text-pink-400"
+      "final_check" -> "bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400"
+      
       _ -> "bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400"
     end
   end
 
   defp get_status_label(status) do
     case status do
+      # Estados de producción
       "new_ticket" -> "Nueva Orden"
+      "new_order" -> "Nueva Orden"
       "reception" -> "Recepción"
       "diagnosis" -> "Diagnóstico"
       "repair" -> "Reparación"
+      "assembly" -> "Ensamblaje"
+      "mounting" -> "Montaje"
       "final_check" -> "Revisión Final"
       "completed" -> "Completada"
       "cancelled" -> "Cancelada"
-      # Estados legacy para compatibilidad
-      "check_in" -> "Check In"
-      "in_workshop" -> "En Taller/Reparación"
-      "car_wash" -> "Car Wash"
-      "check_out" -> "Check Out"
-      _ -> "Desconocido"
+      
+      # Estados de mantenimiento
+      "check_in" -> "Check-in"
+      "in_workshop" -> "En Taller"
+      "car_wash" -> "Lavado"
+      "check_out" -> "Check-out"
+      "recepcion" -> "Recepción"
+      
+      # Estados de evaluación
+      "pending" -> "Pendiente"
+      "in_progress" -> "En Progreso"
+      "converted" -> "Convertido"
+      
+      _ -> String.capitalize(status || "Desconocido")
     end
   end
 
@@ -1054,7 +1095,6 @@ defmodule EvaaCrmWebGaepell.TicketDetailLive do
     case priority do
       "high" -> "Alta"
       "medium" -> "Media"
-      "low" -> "Baja"
       "critical" -> "Crítica"
       _ -> "Normal"
     end
@@ -1064,7 +1104,6 @@ defmodule EvaaCrmWebGaepell.TicketDetailLive do
     case severity do
       "high" -> "Alta"
       "medium" -> "Media"
-      "low" -> "Baja"
       _ -> "Normal"
     end
   end
@@ -1286,25 +1325,6 @@ defmodule EvaaCrmWebGaepell.TicketDetailLive do
     end
   end
 
-  defp get_priority_label(priority) do
-    case priority do
-      "low" -> "Baja"
-      "medium" -> "Media"
-      "high" -> "Alta"
-      "critical" -> "Crítica"
-      _ -> "No especificada"
-    end
-  end
-
-  defp get_priority_color(priority) do
-    case priority do
-      "low" -> "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-      "medium" -> "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
-      "high" -> "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200"
-      "critical" -> "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
-      _ -> "bg-slate-100 text-slate-800 dark:bg-slate-900 dark:text-slate-200"
-    end
-  end
 
   # Helper functions for parsing values
   defp parse_integer(value) when is_binary(value) and value != "" do
@@ -1322,4 +1342,5 @@ defmodule EvaaCrmWebGaepell.TicketDetailLive do
     end
   end
   defp parse_decimal(_), do: nil
+
 end

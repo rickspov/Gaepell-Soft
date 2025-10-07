@@ -34,6 +34,7 @@ defmodule EvaaCrmWebGaepell.Router do
     get "/tickets/*path", UploadController, :ticket_attachment
     get "/maintenance/*path", UploadController, :maintenance_photo
     get "/documents/*path", UploadController, :document_file
+    get "/wizard/*path", UploadController, :wizard_file
   end
 
   # Download generated files

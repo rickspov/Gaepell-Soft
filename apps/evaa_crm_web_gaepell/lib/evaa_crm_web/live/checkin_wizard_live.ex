@@ -1,6 +1,6 @@
 defmodule EvaaCrmWebGaepell.CheckinWizardLive do
   use EvaaCrmWebGaepell, :live_view
-  alias EvaaCrmGaepell.{Repo, Truck, MaintenanceTicket, User, ActivityLog, Fleet}
+  alias EvaaCrmGaepell.{Repo, Truck, MaintenanceTicket, User, ActivityLog, Fleet, Evaluation}
   alias EvaaCrmWebGaepell.Components.UniversalFileUpload
   alias EvaaCrmWebGaepell.Utils.FileUploadUtils
   import Ecto.Query
@@ -8,6 +8,54 @@ defmodule EvaaCrmWebGaepell.CheckinWizardLive do
   import Path
 
   @required_photos ["front", "back", "left", "right", "damage"]
+
+  @impl true
+  def handle_params(params, _uri, socket) do
+    # Manejar parámetros de URL para ir directamente al paso 2
+    case params do
+      %{"scenario" => "evaluation_quotation", "step" => "2"} ->
+        # Cargar camiones existentes para el paso 2
+        import Ecto.Query
+        trucks = from t in Truck,
+                where: t.business_id == ^socket.assigns.current_user.business_id,
+                order_by: [asc: t.brand, asc: t.model]
+        trucks = Repo.all(trucks)
+        
+        {:noreply, 
+         socket
+         |> assign(current_step: 2, scenario: "evaluation_quotation", entry_type: :quotation)
+         |> assign(filtered_trucks: trucks)}
+         
+      %{"scenario" => "maintenance_checkin", "step" => "2"} ->
+        # Cargar camiones existentes para el paso 2
+        import Ecto.Query
+        trucks = from t in Truck,
+                where: t.business_id == ^socket.assigns.current_user.business_id,
+                order_by: [asc: t.brand, asc: t.model]
+        trucks = Repo.all(trucks)
+        
+        {:noreply, 
+         socket
+         |> assign(current_step: 2, scenario: "maintenance_checkin", entry_type: :maintenance)
+         |> assign(filtered_trucks: trucks)}
+         
+      %{"scenario" => "production_order", "step" => "2"} ->
+        # Cargar camiones existentes para el paso 2
+        import Ecto.Query
+        trucks = from t in Truck,
+                where: t.business_id == ^socket.assigns.current_user.business_id,
+                order_by: [asc: t.brand, asc: t.model]
+        trucks = Repo.all(trucks)
+        
+        {:noreply, 
+         socket
+         |> assign(current_step: 2, scenario: "production_order", entry_type: :production)
+         |> assign(filtered_trucks: trucks)}
+         
+      _ ->
+        {:noreply, socket}
+    end
+  end
 
   @impl true
   def mount(_params, session, socket) do
@@ -50,6 +98,10 @@ defmodule EvaaCrmWebGaepell.CheckinWizardLive do
        |> assign(selected_truck_id: nil)
        |> assign(filtered_trucks: [])
        |> assign(created_ticket: nil)
+       |> assign(show_evaluations_modal: false)
+       |> assign(available_evaluations: [])
+       |> assign(selected_evaluation: nil)
+       |> assign(conversion_mode: false)
        |> assign(:existing_brands, existing_brands)
        |> assign(:existing_models, existing_models)
        |> assign(:existing_owners, existing_owners)
@@ -159,6 +211,48 @@ defmodule EvaaCrmWebGaepell.CheckinWizardLive do
   def handle_event("hide_existing_trucks_modal", _params, socket) do
     IO.inspect("Hiding existing trucks modal", label: "[DEBUG]")
     {:noreply, assign(socket, show_existing_trucks_modal: false)}
+  end
+
+  @impl true
+  def handle_event("show_evaluations_modal", _params, socket) do
+    IO.inspect("Opening evaluations modal", label: "[DEBUG]")
+    # Cargar evaluaciones disponibles
+    evaluations = get_available_evaluations()
+    {:noreply, 
+     socket
+     |> assign(show_evaluations_modal: true)
+     |> assign(available_evaluations: evaluations)}
+  end
+
+  @impl true
+  def handle_event("hide_evaluations_modal", _params, socket) do
+    IO.inspect("Hiding evaluations modal", label: "[DEBUG]")
+    {:noreply, assign(socket, show_evaluations_modal: false)}
+  end
+
+  @impl true
+  def handle_event("select_evaluation", %{"evaluation_id" => evaluation_id}, socket) do
+    IO.inspect("Selecting evaluation: #{evaluation_id}", label: "[DEBUG]")
+    evaluation_id = String.to_integer(evaluation_id)
+    
+    # Buscar la evaluación seleccionada
+    evaluation = Enum.find(socket.assigns.available_evaluations, fn e -> e.id == evaluation_id end)
+    
+    if evaluation do
+      # Cargar datos de la evaluación para pre-llenar el formulario de mantenimiento
+      maintenance_data = convert_evaluation_to_maintenance_data(evaluation)
+      
+      {:noreply, 
+       socket
+       |> assign(selected_evaluation: evaluation)
+       |> assign(conversion_mode: true)
+       |> assign(maintenance_form_data: maintenance_data)
+       |> assign(found_truck: evaluation.truck)
+       |> assign(show_evaluations_modal: false)
+       |> assign(current_step: 4)}
+    else
+      {:noreply, put_flash(socket, :error, "Evaluación no encontrada")}
+    end
   end
 
   @impl true
@@ -398,6 +492,38 @@ defmodule EvaaCrmWebGaepell.CheckinWizardLive do
   end
 
   # Helper functions
+  defp get_available_evaluations do
+    import Ecto.Query
+    
+    Evaluation
+    |> where([e], e.status in ["pending", "in_progress"])
+    |> join(:left, [e], t in assoc(e, :truck))
+    |> preload([e, t], truck: t)
+    |> order_by([e], [desc: e.inserted_at])
+    |> limit(50)
+    |> Repo.all()
+  end
+
+  defp convert_evaluation_to_maintenance_data(evaluation) do
+    %{
+      "truck_id" => evaluation.truck_id,
+      "truck_info" => %{
+        "brand" => evaluation.truck.brand,
+        "model" => evaluation.truck.model,
+        "year" => evaluation.truck.year,
+        "license_plate" => evaluation.truck.license_plate,
+        "ficha" => evaluation.truck.ficha
+      },
+      "damage_description" => evaluation.description || "",
+      "damage_areas" => evaluation.damage_areas || [],
+      "severity_level" => evaluation.severity_level || "",
+      "additional_notes" => evaluation.notes || "",
+      "evaluation_type" => evaluation.evaluation_type || "",
+      "source_evaluation_id" => evaluation.id,
+      "conversion_mode" => true
+    }
+  end
+
   defp get_existing_brands do
     Truck
     |> select([t], t.brand)
@@ -574,12 +700,12 @@ defmodule EvaaCrmWebGaepell.CheckinWizardLive do
       <!-- Navigation Buttons -->
       <div class="flex flex-col sm:flex-row justify-between gap-4 sm:gap-0 mt-6 sm:mt-8">
         <div class="flex flex-col sm:flex-row gap-3">
-          <button phx-click="back_to_start" 
+          <button type="button" phx-click="back_to_start" 
                   class="px-4 py-3 sm:py-2 text-sm font-medium text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors">
             Cancelar
           </button>
           <%= if @current_step > 1 do %>
-            <button phx-click="prev_step" 
+            <button type="button" phx-click="prev_step" 
                     class="px-4 py-3 sm:py-2 text-sm font-medium text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors flex items-center justify-center gap-2">
               <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
@@ -591,7 +717,7 @@ defmodule EvaaCrmWebGaepell.CheckinWizardLive do
         
         <div>
           <%= if @current_step < @total_steps do %>
-            <button phx-click="next_step" 
+            <button type="button" phx-click="next_step" 
                     class="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2">
               Siguiente
               <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -599,7 +725,7 @@ defmodule EvaaCrmWebGaepell.CheckinWizardLive do
               </svg>
             </button>
           <% else %>
-            <button phx-click="complete_wizard" 
+            <button type="button" phx-click="complete_wizard" 
                     class="px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2">
               Completar
               <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -630,7 +756,7 @@ defmodule EvaaCrmWebGaepell.CheckinWizardLive do
   defp render_scenario_selection(assigns) do
     ~H"""
     <div class="grid grid-cols-1 gap-6">
-      <button phx-click="select_scenario" phx-value-scenario="evaluation_quotation" 
+      <button type="button" phx-click="select_scenario" phx-value-scenario="evaluation_quotation" 
               class="w-full py-8 rounded-lg bg-purple-600 text-white text-xl font-semibold shadow hover:bg-purple-700 transition flex items-center justify-center gap-3">
         <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
@@ -638,7 +764,7 @@ defmodule EvaaCrmWebGaepell.CheckinWizardLive do
         <span>Evaluación & Cotización</span>
       </button>
       
-      <button phx-click="select_scenario" phx-value-scenario="maintenance_checkin" 
+      <button type="button" phx-click="select_scenario" phx-value-scenario="maintenance_checkin" 
               class="w-full py-8 rounded-lg bg-red-500 text-white text-xl font-semibold shadow hover:bg-red-600 transition flex items-center justify-center gap-3">
         <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
@@ -647,7 +773,7 @@ defmodule EvaaCrmWebGaepell.CheckinWizardLive do
         <span>🛠️ Check-in de Mantenimiento</span>
       </button>
       
-      <button phx-click="select_scenario" phx-value-scenario="production_order" 
+      <button type="button" phx-click="select_scenario" phx-value-scenario="production_order" 
               class="w-full py-8 rounded-lg bg-green-500 text-white text-xl font-semibold shadow hover:bg-green-600 transition flex items-center justify-center gap-3">
         <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
@@ -663,20 +789,43 @@ defmodule EvaaCrmWebGaepell.CheckinWizardLive do
     <div class="space-y-6">
       <div class="text-center">
         <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-2">
-          Seleccionar Camión
+          <%= if @entry_type == :maintenance do %>
+            Seleccionar Origen del Mantenimiento
+          <% else %>
+            Seleccionar Camión
+          <% end %>
         </h3>
         <p class="text-slate-600 dark:text-slate-400">
-          Elige un camión existente o registra uno nuevo
+          <%= if @entry_type == :maintenance do %>
+            Convierte una evaluación existente o crea un nuevo ticket de mantenimiento
+          <% else %>
+            Elige un camión existente o registra uno nuevo
+          <% end %>
         </p>
       </div>
       
       <div class="grid grid-cols-1 gap-4">
+        <%= if @entry_type == :maintenance do %>
+          <!-- Opción para convertir evaluación existente -->
+          <button phx-click="show_evaluations_modal" 
+                  class="w-full py-6 rounded-lg bg-purple-500 text-white text-lg font-semibold shadow hover:bg-purple-600 transition flex items-center justify-center gap-3">
+            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+            </svg>
+            Convertir Evaluación Existente
+          </button>
+        <% end %>
+        
         <button phx-click="show_existing_trucks_modal" 
                 class="w-full py-6 rounded-lg bg-green-500 text-white text-lg font-semibold shadow hover:bg-green-600 transition flex items-center justify-center gap-3">
           <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
           </svg>
-          Seleccionar Camión Existente
+          <%= if @entry_type == :maintenance do %>
+            Crear Mantenimiento Nuevo
+          <% else %>
+            Seleccionar Camión Existente
+          <% end %>
         </button>
         
         <button phx-click="show_new_truck_form" 
@@ -1062,7 +1211,7 @@ defmodule EvaaCrmWebGaepell.CheckinWizardLive do
           <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">Tipo de Evaluación</h3>
         </div>
         <div class="p-6">
-          <div class="space-y-3">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div class="flex items-start space-x-3 p-3 border border-slate-200 dark:border-slate-600 rounded-lg">
               <input type="radio" name="evaluation[evaluation_type]" value="garantia" id="garantia" 
                      checked={@evaluation_form_data["evaluation_type"] == "garantia"}
@@ -1154,106 +1303,97 @@ defmodule EvaaCrmWebGaepell.CheckinWizardLive do
           <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">Detalles del Daño</h3>
         </div>
         <div class="p-6 space-y-6">
-          <div>
-            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Descripción del Daño *</label>
-            <textarea
-              name="evaluation[description]"
-              phx-change="evaluation_field_changed"
-              phx-value-field="description"
-              class="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-slate-700 dark:text-slate-100"
-              placeholder="Describe detalladamente los daños observados..."
-              rows="4"
-            ><%= @evaluation_form_data["description"] || "" %></textarea>
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Descripción del Daño -->
+            <div>
+              <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Descripción del Daño *</label>
+              <textarea
+                name="evaluation[description]"
+                phx-change="evaluation_field_changed"
+                phx-value-field="description"
+                class="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-slate-700 dark:text-slate-100"
+                placeholder="Describe detalladamente los daños observados..."
+                rows="4"
+              ><%= @evaluation_form_data["description"] || "" %></textarea>
+            </div>
+
+            <!-- Notas Adicionales -->
+            <div>
+              <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Notas Adicionales</label>
+              <textarea
+                name="evaluation[notes]"
+                value={@evaluation_form_data["notes"]}
+                phx-change="evaluation_field_changed"
+                phx-value-field="notes"
+                class="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-slate-700 dark:text-slate-100"
+                placeholder="Cualquier información adicional relevante..."
+                rows="4"
+              ></textarea>
+            </div>
           </div>
 
-          <div>
-            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">Áreas Afectadas</label>
-            <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
-              <%= for area <- ["Frontal", "Lateral Izquierdo", "Lateral Derecho", "Trasero", "Techo", "Cabina", "Caja/Remolque", "Llantas", "Motor", "Interior"] do %>
-                <div class="flex items-center space-x-2">
-                  <input type="checkbox"
-                         id={area}
-                         name="evaluation[damage_areas][]"
-                         value={area}
-                         checked={area in (@evaluation_form_data["damage_areas"] || [])}
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Áreas Afectadas -->
+            <div>
+              <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">Áreas Afectadas</label>
+              <div class="grid grid-cols-2 gap-3">
+                <%= for area <- ["Frontal", "Lateral Conductor", "Lateral Pasajero", "Puertas Traseras", "Bisagras", "Caja/Remolque", "Paneles"] do %>
+                  <div class="flex items-center space-x-2">
+                    <input type="checkbox"
+                           id={area}
+                           name="evaluation[damage_areas][]"
+                           value={area}
+                           checked={area in (@evaluation_form_data["damage_areas"] || [])}
+                           phx-change="evaluation_field_changed"
+                           phx-value-field="damage_areas"
+                           class="rounded border-slate-300 dark:border-slate-600" />
+                    <label for={area} class="cursor-pointer text-sm text-slate-700 dark:text-slate-300"><%= area %></label>
+                  </div>
+                <% end %>
+              </div>
+            </div>
+
+            <!-- Nivel de Severidad -->
+            <div>
+              <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">Nivel de Severidad *</label>
+              <div class="space-y-3">
+                <div class="flex items-start space-x-3 p-3 border border-slate-200 dark:border-slate-600 rounded-lg">
+                  <input type="radio" name="evaluation[severity_level]" value="medium" id="moderate"
+                         checked={@evaluation_form_data["severity_level"] == "medium"}
                          phx-change="evaluation_field_changed"
-                         phx-value-field="damage_areas"
-                         class="rounded border-slate-300 dark:border-slate-600" />
-                  <label for={area} class="cursor-pointer text-sm text-slate-700 dark:text-slate-300"><%= area %></label>
-                </div>
-              <% end %>
-            </div>
-          </div>
-
-          <div>
-            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">Nivel de Severidad *</label>
-            <div class="space-y-3">
-              <div class="flex items-start space-x-3 p-3 border border-slate-200 dark:border-slate-600 rounded-lg">
-                <input type="radio" name="evaluation[severity_level]" value="low" id="minor"
-                       checked={@evaluation_form_data["severity_level"] == "low"}
-                       phx-change="evaluation_field_changed"
-                       phx-value-field="severity_level"
-                       class="mt-1" />
-                <div class="flex-1">
-                  <div class="flex items-center gap-2">
-                    <label for="minor" class="font-medium text-slate-900 dark:text-slate-100 cursor-pointer">
-                      Menor
-                    </label>
-                    <div class="w-3 h-3 rounded-full bg-green-500"></div>
+                         phx-value-field="severity_level"
+                         class="mt-1" />
+                  <div class="flex-1">
+                    <div class="flex items-center gap-2">
+                      <label for="moderate" class="font-medium text-slate-900 dark:text-slate-100 cursor-pointer">
+                        Moderado
+                      </label>
+                      <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
+                    </div>
+                    <p class="text-sm text-slate-600 dark:text-slate-400">Requiere reparación, afecta parcialmente</p>
                   </div>
-                  <p class="text-sm text-slate-600 dark:text-slate-400">Daño cosmético, no afecta funcionamiento</p>
                 </div>
-              </div>
-              
-              <div class="flex items-start space-x-3 p-3 border border-slate-200 dark:border-slate-600 rounded-lg">
-                <input type="radio" name="evaluation[severity_level]" value="medium" id="moderate"
-                       checked={@evaluation_form_data["severity_level"] == "medium"}
-                       phx-change="evaluation_field_changed"
-                       phx-value-field="severity_level"
-                       class="mt-1" />
-                <div class="flex-1">
-                  <div class="flex items-center gap-2">
-                    <label for="moderate" class="font-medium text-slate-900 dark:text-slate-100 cursor-pointer">
-                      Moderado
-                    </label>
-                    <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
+                
+                <div class="flex items-start space-x-3 p-3 border border-slate-200 dark:border-slate-600 rounded-lg">
+                  <input type="radio" name="evaluation[severity_level]" value="high" id="severe"
+                         checked={@evaluation_form_data["severity_level"] == "high"}
+                         phx-change="evaluation_field_changed"
+                         phx-value-field="severity_level"
+                         class="mt-1" />
+                  <div class="flex-1">
+                    <div class="flex items-center gap-2">
+                      <label for="severe" class="font-medium text-slate-900 dark:text-slate-100 cursor-pointer">
+                        Severo
+                      </label>
+                      <div class="w-3 h-3 rounded-full bg-red-500"></div>
+                    </div>
+                    <p class="text-sm text-slate-600 dark:text-slate-400">Daño crítico, requiere atención inmediata</p>
                   </div>
-                  <p class="text-sm text-slate-600 dark:text-slate-400">Requiere reparación, afecta parcialmente</p>
-                </div>
-              </div>
-              
-              <div class="flex items-start space-x-3 p-3 border border-slate-200 dark:border-slate-600 rounded-lg">
-                <input type="radio" name="evaluation[severity_level]" value="high" id="severe"
-                       checked={@evaluation_form_data["severity_level"] == "high"}
-                       phx-change="evaluation_field_changed"
-                       phx-value-field="severity_level"
-                       class="mt-1" />
-                <div class="flex-1">
-                  <div class="flex items-center gap-2">
-                    <label for="severe" class="font-medium text-slate-900 dark:text-slate-100 cursor-pointer">
-                      Severo
-                    </label>
-                    <div class="w-3 h-3 rounded-full bg-red-500"></div>
-                  </div>
-                  <p class="text-sm text-slate-600 dark:text-slate-400">Daño crítico, requiere atención inmediata</p>
                 </div>
               </div>
             </div>
           </div>
 
-          <div>
-            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Costo Estimado de Reparación</label>
-            <input
-              type="number"
-              name="evaluation[estimated_cost]"
-              value={@evaluation_form_data["estimated_cost"]}
-              phx-change="evaluation_field_changed"
-              phx-value-field="estimated_cost"
-              class="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-slate-700 dark:text-slate-100"
-              placeholder="0.00"
-              step="0.01"
-            />
-          </div>
         </div>
       </div>
 
@@ -1267,6 +1407,7 @@ defmodule EvaaCrmWebGaepell.CheckinWizardLive do
           <div class="space-y-4">
             <!-- Botón para abrir modal de subida -->
             <button 
+              type="button"
               phx-click="show_upload_modal" 
               class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
             >
@@ -1324,23 +1465,6 @@ defmodule EvaaCrmWebGaepell.CheckinWizardLive do
         </div>
       </div>
 
-      <!-- Notes -->
-      <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700">
-        <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-700">
-          <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">Notas Adicionales</h3>
-        </div>
-        <div class="p-6">
-          <textarea
-            name="evaluation[notes]"
-            value={@evaluation_form_data["notes"]}
-            phx-change="evaluation_field_changed"
-            phx-value-field="notes"
-            class="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-slate-700 dark:text-slate-100"
-            placeholder="Cualquier información adicional relevante..."
-            rows="4"
-          ></textarea>
-        </div>
-      </div>
 
       <!-- Summary -->
       <%= if @evaluation_form_data["severity_level"] || (@evaluation_form_data["damage_areas"] && length(@evaluation_form_data["damage_areas"]) > 0) do %>
@@ -1364,23 +1488,13 @@ defmodule EvaaCrmWebGaepell.CheckinWizardLive do
                   <span class="text-sm font-medium text-slate-900 dark:text-slate-100"><%= Enum.join(@evaluation_form_data["damage_areas"], ", ") %></span>
                 </div>
               <% end %>
-              <%= if @evaluation_form_data["estimated_cost"] && @evaluation_form_data["estimated_cost"] != "" do %>
-                <div>
-                  <span class="text-sm text-slate-600 dark:text-slate-400">Costo estimado: </span>
-                  <span class="text-sm font-medium text-slate-900 dark:text-slate-100">$<%= @evaluation_form_data["estimated_cost"] %></span>
-                </div>
-              <% end %>
             </div>
           </div>
         </div>
       <% end %>
 
       <!-- Actions -->
-      <div class="flex justify-between">
-        <button type="button" phx-click="prev_step" 
-                class="px-4 py-2 text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors">
-          Anterior
-        </button>
+      <div class="flex justify-end">
         <div class="flex gap-2">
           <button type="button" phx-click="submit_evaluation" phx-value-action="draft"
                   class="px-4 py-2 text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors">
@@ -1551,7 +1665,7 @@ defmodule EvaaCrmWebGaepell.CheckinWizardLive do
           <div>
             <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">Áreas a Mantener</label>
             <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
-              <%= for area <- ["Motor", "Transmisión", "Sistema Eléctrico", "Frenos", "Suspensión", "Dirección", "Llantas", "Carrocería", "Interior", "Sistema de Combustible"] do %>
+              <%= for area <- ["Motor", "Transmisión", "Frenos", "Suspensión", "Dirección", "Llantas", "Carrocería", "Paneles", "Sistema de Combustible"] do %>
                 <div class="flex items-center space-x-2">
                   <input type="checkbox"
                          id={area}
@@ -1664,18 +1778,6 @@ defmodule EvaaCrmWebGaepell.CheckinWizardLive do
               </select>
             </div>
 
-            <div>
-              <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Costo Estimado</label>
-              <input
-                type="number"
-                name="maintenance[estimated_cost]"
-                value={@maintenance_form_data["estimated_cost"]}
-                phx-change="maintenance_field_changed"
-                class="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent dark:bg-slate-700 dark:text-slate-100"
-                placeholder="0.00"
-                step="0.01"
-              />
-            </div>
           </div>
 
           <div>
@@ -1700,31 +1802,48 @@ defmodule EvaaCrmWebGaepell.CheckinWizardLive do
         </div>
         <div class="p-6">
           <div class="space-y-4">
-            <!-- Nota informativa sobre la funcionalidad de upload -->
-            <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-4">
-              <div class="flex items-start">
-                <svg class="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                </svg>
-                <div>
-                  <h4 class="text-sm font-medium text-blue-800 dark:text-blue-200 mb-1">
-                    Subida de archivos disponible después de crear el ticket
-                  </h4>
-                  <p class="text-sm text-blue-700 dark:text-blue-300">
-                    Una vez creado el ticket de mantenimiento, podrás subir fotos y documentos PDF desde la vista detallada del ticket. 
-                    Esta funcionalidad estará disponible en la página de detalles del mantenimiento.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <!-- Botón temporal deshabilitado -->
-            <button disabled class="px-3 py-1 border border-slate-300 dark:border-slate-600 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 cursor-not-allowed text-sm opacity-50">
-              <svg class="w-4 h-4 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <!-- Botón para abrir modal de subida -->
+            <button 
+              type="button"
+              phx-click="show_upload_modal" 
+              class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
               </svg>
-              Subir Archivo (Próximamente)
+              Subir Fotos y Documentos
             </button>
+
+            <!-- Lista de archivos ya subidos -->
+            <%= if length(@existing_files) > 0 do %>
+              <div class="mt-4">
+                <h4 class="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">Archivos subidos:</h4>
+                <div class="space-y-2">
+                  <%= for file <- @existing_files do %>
+                    <div class="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-700 rounded-lg border border-slate-200 dark:border-slate-600">
+                      <div class="flex items-center space-x-2">
+                        <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                        <span class="text-sm text-slate-700 dark:text-slate-300"><%= file.original_name %></span>
+                        <%= if file.description && file.description != "" do %>
+                          <span class="text-xs text-slate-500 dark:text-slate-400">(<%= file.description %>)</span>
+                        <% end %>
+                      </div>
+                      <button 
+                        phx-click="remove_file" 
+                        phx-value-file_path={file.path}
+                        class="p-1 hover:bg-slate-200 dark:hover:bg-slate-600 rounded text-red-500"
+                      >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                      </button>
+                    </div>
+                  <% end %>
+                </div>
+              </div>
+            <% end %>
 
             <!-- Lista de archivos existentes -->
             <div class="mt-6">
@@ -1780,23 +1899,13 @@ defmodule EvaaCrmWebGaepell.CheckinWizardLive do
                   <span class="text-sm font-medium text-slate-900 dark:text-slate-100"><%= Enum.join(@maintenance_form_data["maintenance_areas"], ", ") %></span>
                 </div>
               <% end %>
-              <%= if @maintenance_form_data["estimated_cost"] && @maintenance_form_data["estimated_cost"] != "" do %>
-                <div>
-                  <span class="text-sm text-slate-600 dark:text-slate-400">Costo estimado: </span>
-                  <span class="text-sm font-medium text-slate-900 dark:text-slate-100">$<%= @maintenance_form_data["estimated_cost"] %></span>
-                </div>
-              <% end %>
             </div>
           </div>
         </div>
       <% end %>
 
       <!-- Actions -->
-      <div class="flex justify-between">
-        <button type="button" phx-click="prev_step" 
-                class="px-4 py-2 text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors">
-          Anterior
-        </button>
+      <div class="flex justify-end">
         <div class="flex gap-2">
           <button type="button" phx-click="submit_maintenance" phx-value-action="draft"
                   class="px-4 py-2 text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors">
@@ -1975,7 +2084,7 @@ defmodule EvaaCrmWebGaepell.CheckinWizardLive do
                           <%= truck.brand %> <%= truck.model %>
                         </h4>
                         <p class="text-sm text-slate-600 dark:text-slate-400">
-                          Placa: <%= truck.license_plate %> | Año: <%= truck.year %>
+                          Placa: <%= truck.license_plate %> | Ficha: <%= truck.ficha || "N/A" %>
                         </p>
                         <%= if truck.kilometraje && truck.kilometraje > 0 do %>
                           <p class="text-xs text-slate-500 dark:text-slate-500">
@@ -2144,7 +2253,6 @@ defmodule EvaaCrmWebGaepell.CheckinWizardLive do
     IO.inspect(evaluation_data["damage_areas"], label: "[DEBUG] damage_areas")
     IO.inspect(evaluation_data["description"], label: "[DEBUG] description")
     IO.inspect(evaluation_data["severity_level"], label: "[DEBUG] severity_level")
-    IO.inspect(evaluation_data["estimated_cost"], label: "[DEBUG] estimated_cost")
     IO.inspect(evaluation_data["evaluation_type"], label: "[DEBUG] evaluation_type")
     IO.inspect(evaluation_data["delivered_by"], label: "[DEBUG] delivered_by")
     IO.inspect(evaluation_data["driver_cedula"], label: "[DEBUG] driver_cedula")
@@ -2305,8 +2413,76 @@ defmodule EvaaCrmWebGaepell.CheckinWizardLive do
     {:noreply, cancel_upload(socket, :evaluation_photos, ref)}
   end
 
+  def handle_event("remove_file", %{"file_path" => file_path}, socket) do
+    existing_files = socket.assigns.existing_files || []
+    updated_files = Enum.reject(existing_files, fn file -> file.path == file_path end)
+    
+    {:noreply, assign(socket, :existing_files, updated_files)}
+  end
+
   def handle_event("validate_attachments", _params, socket) do
     {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("save_attachments", _params, socket) do
+    IO.inspect("Save attachments event triggered in wizard", label: "[DEBUG]")
+    
+    # Procesar archivos subidos
+    uploaded_files = consume_uploaded_entries(socket, :evaluation_photos, fn %{path: path}, entry ->
+      IO.inspect("Processing file: #{entry.client_name}", label: "[DEBUG]")
+      
+      # Crear directorio para archivos si no existe
+      upload_dir = Path.join(["priv", "static", "uploads", "wizard", "evaluations"])
+      File.mkdir_p!(upload_dir)
+      
+      # Generar nombre único para el archivo usando timestamp y nombre original
+      timestamp = System.system_time(:millisecond)
+      unique_filename = "#{timestamp}_#{entry.client_name}"
+      dest_path = Path.join(upload_dir, unique_filename)
+      
+      # Copiar archivo
+      File.cp!(path, dest_path)
+      
+      # Obtener descripción del archivo
+      description = Map.get(socket.assigns.file_descriptions, entry.ref, "")
+      
+      file_info = %{
+        original_name: entry.client_name,
+        filename: unique_filename,
+        path: "/uploads/wizard/evaluations/#{unique_filename}",
+        size: entry.client_size,
+        content_type: entry.client_type,
+        description: description
+      }
+      
+      IO.inspect(file_info, label: "[DEBUG] File info")
+      IO.inspect("File copied successfully to: #{dest_path}", label: "[DEBUG]")
+      {:ok, file_info}
+    end)
+
+    IO.inspect(uploaded_files, label: "[DEBUG] Uploaded files")
+    IO.inspect(length(uploaded_files), label: "[DEBUG] Number of uploaded files")
+
+    if length(uploaded_files) > 0 do
+      # Guardar archivos en el estado del wizard
+      existing_files = socket.assigns.existing_files || []
+      all_files = existing_files ++ uploaded_files
+      
+      {:noreply, 
+       socket
+       |> assign(:existing_files, all_files)
+       |> assign(:show_upload_modal, false)
+       |> assign(:file_descriptions, %{})
+       |> put_flash(:info, "Archivos subidos correctamente")}
+    else
+      IO.inspect("No files to upload", label: "[DEBUG]")
+      {:noreply, 
+       socket
+       |> assign(:show_upload_modal, false)
+       |> assign(:file_descriptions, %{})
+       |> put_flash(:info, "No se seleccionaron archivos")}
+    end
   end
 
   def handle_event("save_attachments", params, socket) do
@@ -2601,7 +2777,6 @@ defmodule EvaaCrmWebGaepell.CheckinWizardLive do
         "driver_cedula" => evaluation_data["driver_cedula"] || "",
         "damage_areas" => damage_areas,
         "severity_level" => evaluation_data["severity_level"] || "medium",
-        "estimated_cost" => parse_decimal(evaluation_data["estimated_cost"]),
         "notes" => evaluation_data["notes"] || "",
         "evaluation_details" => evaluation_details,
         "status" => "pending"
@@ -2611,7 +2786,6 @@ defmodule EvaaCrmWebGaepell.CheckinWizardLive do
       IO.inspect(evaluation_params["damage_areas"], label: "[DEBUG] damage_areas in params")
       IO.inspect(evaluation_params["description"], label: "[DEBUG] description in params")
       IO.inspect(evaluation_params["severity_level"], label: "[DEBUG] severity_level in params")
-      IO.inspect(evaluation_params["estimated_cost"], label: "[DEBUG] estimated_cost in params")
       
       case EvaaCrmGaepell.Evaluation.create_evaluation(evaluation_params, socket.assigns.current_user.id) do
         {:ok, evaluation} ->
@@ -2692,7 +2866,6 @@ defmodule EvaaCrmWebGaepell.CheckinWizardLive do
     case severity do
       "high" -> "bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-400"
       "medium" -> "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-400"
-      "low" -> "bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-400"
       _ -> "bg-gray-100 text-gray-800 dark:bg-gray-900/50 dark:text-gray-400"
     end
   end
@@ -2701,7 +2874,6 @@ defmodule EvaaCrmWebGaepell.CheckinWizardLive do
     case severity do
       "high" -> "Alto"
       "medium" -> "Medio"
-      "low" -> "Bajo"
       _ -> "No especificado"
     end
   end
@@ -2806,6 +2978,47 @@ defmodule EvaaCrmWebGaepell.CheckinWizardLive do
     end
   end
 
+  # Helper functions for evaluation types
+  defp get_evaluation_type_color(type) do
+    case type do
+      "garantia" -> "bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-400"
+      "colision" -> "bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-400"
+      "desgaste" -> "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-400"
+      "otro" -> "bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-400"
+      _ -> "bg-gray-100 text-gray-800 dark:bg-gray-900/50 dark:text-gray-400"
+    end
+  end
+
+  defp get_evaluation_type_label(type) do
+    case type do
+      "garantia" -> "Garantía"
+      "colision" -> "Colisión"
+      "desgaste" -> "Desgaste"
+      "otro" -> "Otro"
+      _ -> "No especificado"
+    end
+  end
+
+  defp get_status_color(status) do
+    case status do
+      "pending" -> "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-400"
+      "in_progress" -> "bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-400"
+      "completed" -> "bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-400"
+      "cancelled" -> "bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-400"
+      _ -> "bg-gray-100 text-gray-800 dark:bg-gray-900/50 dark:text-gray-400"
+    end
+  end
+
+  defp get_status_label(status) do
+    case status do
+      "pending" -> "Pendiente"
+      "in_progress" -> "En Progreso"
+      "completed" -> "Completado"
+      "cancelled" -> "Cancelado"
+      _ -> "Desconocido"
+    end
+  end
+
   defp create_maintenance_ticket(socket) do
     maintenance_data = socket.assigns.maintenance_form_data
     found_truck = socket.assigns.found_truck
@@ -2842,7 +3055,6 @@ defmodule EvaaCrmWebGaepell.CheckinWizardLive do
         "deliverer_name" => maintenance_data["delivered_by"],
         "document_number" => maintenance_data["driver_cedula"],
         "evaluation_notes" => "Tipo: #{maintenance_data["maintenance_type"] || "No especificado"}\nÁreas: #{Enum.join(maintenance_data["maintenance_areas"] || [], ", ")}",
-        "estimated_repair_cost" => parse_decimal(maintenance_data["estimated_cost"])
       }
     
     case EvaaCrmGaepell.Fleet.create_maintenance_ticket(Map.put(maintenance_params, :user_id, current_user.id)) do
@@ -2950,17 +3162,27 @@ defmodule EvaaCrmWebGaepell.CheckinWizardLive do
     end
   end
 
-  # Upload Modal - Moved outside of forms to prevent nesting issues
+  # Helper para formatear el tamaño de archivo
+  defp format_file_size(size) when is_integer(size) do
+    cond do
+      size < 1024 -> "#{size} B"
+      size < 1024 * 1024 -> "#{Float.round(size / 1024, 1)} KB"
+      size < 1024 * 1024 * 1024 -> "#{Float.round(size / (1024 * 1024), 1)} MB"
+      true -> "#{Float.round(size / (1024 * 1024 * 1024), 1)} GB"
+    end
+  end
+
+  defp format_file_size(_), do: "0 B"
+
+  # Upload Modal - Same system as ticket detail
   defp render_upload_modal(assigns) do
     ~H"""
     <%= if @show_upload_modal do %>
       <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-xl max-w-md w-full mx-4">
           <div class="p-6">
             <div class="flex items-center justify-between mb-4">
-              <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">
-                Subir Fotos y Documentos
-              </h3>
+              <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">Subir Archivos</h3>
               <button phx-click="close_upload_modal" class="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
@@ -2968,42 +3190,175 @@ defmodule EvaaCrmWebGaepell.CheckinWizardLive do
               </button>
             </div>
 
-            <div class="space-y-4">
-              <p class="text-center text-slate-600 dark:text-slate-400">
-                Selecciona archivos para subir
-              </p>
-              
-              <.live_file_input upload={@uploads.evaluation_photos} 
-                  class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                  accept=".jpg,.jpeg,.png,.gif,.pdf,.doc,.docx,.txt,.xlsx,.xls" />
-              
-              <%= if length(@uploads.evaluation_photos.entries) > 0 do %>
-                <div class="space-y-2">
-                  <h4 class="text-sm font-medium">Archivos seleccionados:</h4>
-                  <%= for entry <- @uploads.evaluation_photos.entries do %>
-                    <div class="flex items-center justify-between p-2 bg-slate-50 rounded">
-                      <span class="text-sm"><%= entry.client_name %></span>
-                      <button type="button" phx-click="cancel_upload" phx-value-ref={entry.ref} class="text-red-500">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                        </svg>
-                      </button>
+            <form id="upload-attachments-form" phx-submit="save_attachments" phx-change="validate_attachments" phx-hook="UploadModal">
+              <div class="space-y-4">
+                <!-- Zona de arrastrar y soltar -->
+                <div class="border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-lg p-6 text-center">
+                  <svg class="h-12 w-12 mx-auto mb-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                  </svg>
+                  
+                  <div class="space-y-2">
+                    <div class="text-slate-600 dark:text-slate-400">
+                      <p class="text-sm">Arrastra archivos aquí o</p>
                     </div>
-                  <% end %>
+                    
+                    <.live_file_input upload={@uploads.evaluation_photos} 
+                        class="hidden" 
+                        id="file-input"
+                        accept=".jpg,.jpeg,.png,.gif,.pdf,.doc,.docx,.txt,.xlsx,.xls"
+                        phx-change="validate_attachments" />
+                    
+                    <label for="file-input" class="cursor-pointer inline-flex items-center px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-700 hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors">
+                      <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                      </svg>
+                      Seleccionar archivos
+                    </label>
+                  </div>
+                  
+                  <p class="text-xs text-slate-500 dark:text-slate-400 mt-2">
+                    Formatos: JPG, PNG, GIF, PDF, DOC, XLS (máx. 10MB)
+                  </p>
+                </div>
+
+                <!-- Lista de archivos seleccionados -->
+                <%= if length(@uploads.evaluation_photos.entries) > 0 do %>
+                  <div class="space-y-3">
+                    <h4 class="text-sm font-medium text-slate-700 dark:text-slate-300">Archivos seleccionados:</h4>
+                    <%= for entry <- @uploads.evaluation_photos.entries do %>
+                      <div class="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-700 rounded-lg">
+                        <div class="flex-1 min-w-0">
+                          <p class="text-sm font-medium text-slate-900 dark:text-slate-100 truncate">
+                            <%= entry.client_name %>
+                          </p>
+                          <p class="text-xs text-slate-500 dark:text-slate-400">
+                            <%= format_file_size(entry.client_size) %> • <%= entry.client_type %>
+                          </p>
+                        </div>
+                        
+                        <!-- Descripción del archivo -->
+                        <div class="ml-3 flex-1">
+                          <input type="text" 
+                                 placeholder="Descripción (opcional)"
+                                 phx-blur="update_file_description"
+                                 phx-value-ref={entry.ref}
+                                 name={"description_#{entry.ref}"}
+                                 class="w-full px-2 py-1 text-xs border border-slate-300 dark:border-slate-600 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-slate-800 dark:text-slate-100" />
+                        </div>
+                        
+                        <button type="button" 
+                                phx-click="cancel_upload" 
+                                phx-value-ref={entry.ref}
+                                class="ml-3 p-1 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 rounded">
+                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                          </svg>
+                        </button>
+                      </div>
+                    <% end %>
+                  </div>
+                <% end %>
+              </div>
+
+              <div class="flex justify-end space-x-3 mt-6">
+                <button type="button" 
+                        phx-click="close_upload_modal"
+                        class="px-4 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+                  Cancelar
+                </button>
+                <button type="submit"
+                        disabled={length(@uploads.evaluation_photos.entries) == 0}
+                        class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                  Subir Archivos
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    <% end %>
+
+    <!-- Modal de Evaluaciones Disponibles -->
+    <%= if @show_evaluations_modal do %>
+      <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-hidden">
+          <div class="p-6 border-b border-slate-200 dark:border-slate-700">
+            <div class="flex items-center justify-between">
+              <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                Seleccionar Evaluación para Convertir
+              </h3>
+              <button phx-click="hide_evaluations_modal" 
+                      class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+              </button>
+            </div>
+            <p class="text-sm text-slate-600 dark:text-slate-400 mt-2">
+              Selecciona una evaluación existente para convertirla a ticket de mantenimiento
+            </p>
+          </div>
+          
+          <div class="p-6">
+            <div class="max-h-96 overflow-y-auto space-y-3">
+              <%= if @available_evaluations && length(@available_evaluations) > 0 do %>
+                <%= for evaluation <- @available_evaluations do %>
+                  <button phx-click="select_evaluation" phx-value-evaluation_id={evaluation.id} 
+                          class="w-full p-4 border border-slate-200 dark:border-slate-600 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors text-left">
+                    <div class="flex items-center justify-between">
+                      <div class="flex-1">
+                        <div class="flex items-center gap-3 mb-2">
+                          <h4 class="font-semibold text-slate-900 dark:text-slate-100">
+                            <%= evaluation.truck.brand %> <%= evaluation.truck.model %>
+                          </h4>
+                          <span class={"inline-flex px-2 py-1 text-xs font-semibold rounded-full #{get_evaluation_type_color(evaluation.evaluation_type)}"}>
+                            <%= get_evaluation_type_label(evaluation.evaluation_type) %>
+                          </span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4 text-sm text-slate-600 dark:text-slate-400">
+                          <div>
+                            <span class="font-medium">Placa:</span> <%= evaluation.truck.license_plate %>
+                          </div>
+                          <div>
+                            <span class="font-medium">Ficha:</span> <%= evaluation.truck.ficha || "N/A" %>
+                          </div>
+                          <div>
+                            <span class="font-medium">Estado:</span> 
+                            <span class={"inline-flex px-2 py-1 text-xs font-semibold rounded-full #{get_status_color(evaluation.status)}"}>
+                              <%= get_status_label(evaluation.status) %>
+                            </span>
+                          </div>
+                          <div>
+                            <span class="font-medium">Creado:</span> <%= Calendar.strftime(evaluation.inserted_at, "%d/%m/%Y") %>
+                          </div>
+                        </div>
+                        <%= if evaluation.description && evaluation.description != "" do %>
+                          <div class="mt-2">
+                            <span class="text-xs text-slate-500 dark:text-slate-400">Descripción:</span>
+                            <p class="text-xs text-slate-600 dark:text-slate-400 mt-1 line-clamp-2">
+                              <%= evaluation.description %>
+                            </p>
+                          </div>
+                        <% end %>
+                      </div>
+                      <svg class="w-5 h-5 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                      </svg>
+                    </div>
+                  </button>
+                <% end %>
+              <% else %>
+                <div class="text-center py-8">
+                  <svg class="w-12 h-12 text-slate-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                  </svg>
+                  <p class="text-slate-500 dark:text-slate-400">No hay evaluaciones disponibles para convertir</p>
+                  <p class="text-sm text-slate-400 dark:text-slate-500 mt-1">
+                    Solo se muestran evaluaciones en estado "Pendiente" o "En Progreso"
+                  </p>
                 </div>
               <% end %>
-            </div>
-
-            <div class="flex justify-end space-x-3 mt-6">
-              <button type="button" phx-click="close_upload_modal"
-                      class="px-4 py-2 border border-slate-300 rounded-lg text-sm">
-                Cancelar
-              </button>
-              <button type="button" phx-click="save_attachments"
-                      disabled={length(@uploads.evaluation_photos.entries) == 0}
-                      class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm disabled:opacity-50">
-                Subir Archivos
-              </button>
             </div>
           </div>
         </div>

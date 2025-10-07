@@ -63,6 +63,19 @@ defmodule EvaaCrmWebGaepell.KanbanLive do
       |> assign(:dashboard_recent_activities, recent_activities)
       |> assign(:activity_chart_data, activity_chart_data)
       |> assign(:status_distribution_data, status_distribution_data)
+      |> assign(:show_truck_form, false)
+      |> assign(:editing_truck, nil)
+      |> assign(:existing_brands, [])
+      |> assign(:existing_models, [])
+      |> assign(:existing_owners, [])
+      |> assign(:show_evaluations_modal, false)
+      |> assign(:show_maintenance_modal, false)
+      |> assign(:show_production_modal, false)
+      |> assign(:show_completed_modal, false)
+      |> assign(:evaluations_tickets, [])
+      |> assign(:maintenance_tickets, [])
+      |> assign(:production_tickets, [])
+      |> assign(:completed_tickets, [])
     }
   end
 
@@ -621,6 +634,59 @@ defmodule EvaaCrmWebGaepell.KanbanLive do
   end
 
   @impl true
+  def handle_event("show_new_truck_form", _params, socket) do
+    # Cargar datos para autocompletado
+    existing_brands = get_existing_brands()
+    existing_models = get_existing_models()
+    existing_owners = get_existing_owners()
+    
+    {:noreply, assign(socket, :show_truck_form, true) 
+              |> assign(:editing_truck, nil)
+              |> assign(:existing_brands, existing_brands)
+              |> assign(:existing_models, existing_models)
+              |> assign(:existing_owners, existing_owners)}
+  end
+
+  @impl true
+  def handle_event("hide_truck_form", _params, socket) do
+    {:noreply, assign(socket, :show_truck_form, false) |> assign(:editing_truck, nil)}
+  end
+
+  @impl true
+  def handle_event("save_truck", %{"truck" => truck_params}, socket) do
+    # Crear el camión
+    case create_truck(truck_params) do
+      {:ok, _truck} ->
+        # Actualizar stats del dashboard
+        stats = get_dashboard_stats()
+        {:noreply, assign(socket, :show_truck_form, false) 
+                  |> assign(:editing_truck, nil)
+                  |> assign(:dashboard_stats, stats)
+                  |> put_flash(:info, "Camión registrado exitosamente")}
+      {:error, changeset} ->
+        {:noreply, assign(socket, :editing_truck, changeset)}
+    end
+  end
+
+  @impl true
+  def handle_event("filter_brands", %{"value" => query}, socket) do
+    filtered_brands = filter_brands(query, socket.assigns.existing_brands)
+    {:noreply, push_event(socket, "update_brand_suggestions", %{suggestions: filtered_brands})}
+  end
+
+  @impl true
+  def handle_event("filter_models", %{"value" => query}, socket) do
+    filtered_models = filter_models(query, socket.assigns.existing_models)
+    {:noreply, push_event(socket, "update_model_suggestions", %{suggestions: filtered_models})}
+  end
+
+  @impl true
+  def handle_event("filter_owners", %{"value" => query}, socket) do
+    filtered_owners = filter_owners(query, socket.assigns.existing_owners)
+    {:noreply, push_event(socket, "update_owner_suggestions", %{suggestions: filtered_owners})}
+  end
+
+  @impl true
   def handle_event("edit_ticket_from_profile", %{"ticket_id" => ticket_id}, socket) do
     # Cerrar el modal de perfil
     socket = socket
@@ -651,6 +717,88 @@ defmodule EvaaCrmWebGaepell.KanbanLive do
      |> assign(:modal_changeset, ticket_changeset)}
   end
 
+  # Event handlers para los modales de los cards
+  @impl true
+  def handle_event("show_evaluations_modal", _params, socket) do
+    # Cargar las últimas 5 evaluaciones
+    evaluations = Repo.all(from e in EvaaCrmGaepell.Evaluation,
+      order_by: [desc: e.inserted_at],
+      limit: 5,
+      preload: [:truck])
+    
+    {:noreply, assign(socket, 
+      show_evaluations_modal: true, 
+      evaluations_tickets: evaluations)}
+  end
+
+  @impl true
+  def handle_event("show_maintenance_modal", _params, socket) do
+    # Cargar los últimos 5 tickets de mantenimiento
+    maintenance_tickets = Repo.all(from m in MaintenanceTicket,
+      order_by: [desc: m.inserted_at],
+      limit: 5,
+      preload: [:truck])
+    
+    {:noreply, assign(socket, 
+      show_maintenance_modal: true, 
+      maintenance_tickets: maintenance_tickets)}
+  end
+
+  @impl true
+  def handle_event("show_production_modal", _params, socket) do
+    # Cargar las últimas 5 órdenes de producción
+    production_orders = Repo.all(from p in ProductionOrder,
+      order_by: [desc: p.inserted_at],
+      limit: 5)
+    
+    {:noreply, assign(socket, 
+      show_production_modal: true, 
+      production_tickets: production_orders)}
+  end
+
+  @impl true
+  def handle_event("show_completed_modal", _params, socket) do
+    # Cargar los últimos 5 tickets completados (mantenimiento + producción)
+    completed_maintenance = Repo.all(from m in MaintenanceTicket,
+      where: m.status in ["check_out", "completed"],
+      order_by: [desc: m.updated_at],
+      limit: 3,
+      preload: [:truck])
+    
+    completed_production = Repo.all(from p in ProductionOrder,
+      where: p.status == "completed",
+      order_by: [desc: p.updated_at],
+      limit: 2)
+    
+    all_completed = completed_maintenance ++ completed_production
+    |> Enum.sort_by(& &1.updated_at, {:desc, NaiveDateTime})
+    |> Enum.take(5)
+    
+    {:noreply, assign(socket, 
+      show_completed_modal: true, 
+      completed_tickets: all_completed)}
+  end
+
+  @impl true
+  def handle_event("close_evaluations_modal", _params, socket) do
+    {:noreply, assign(socket, show_evaluations_modal: false)}
+  end
+
+  @impl true
+  def handle_event("close_maintenance_modal", _params, socket) do
+    {:noreply, assign(socket, show_maintenance_modal: false)}
+  end
+
+  @impl true
+  def handle_event("close_production_modal", _params, socket) do
+    {:noreply, assign(socket, show_production_modal: false)}
+  end
+
+  @impl true
+  def handle_event("close_completed_modal", _params, socket) do
+    {:noreply, assign(socket, show_completed_modal: false)}
+  end
+
   defp normalize_and_clean_filters(params) do
     normalized_params = 
       params
@@ -672,29 +820,29 @@ defmodule EvaaCrmWebGaepell.KanbanLive do
 
   defp load_kanban_items(filters, current_view \\ "integrated") do
     # Obtener empresa seleccionada
-    _selected_company_id = get_selected_company_id(filters)
+    selected_company_id = get_selected_company_id(filters)
     
     # Obtener workflows activos filtrados por empresa
     workflows = Repo.all(from w in Workflow, 
       where: w.is_active == true,
       preload: [workflow_states: ^(from ws in WorkflowState, order_by: ws.order_index)])
-    |> filter_workflows_by_company(_selected_company_id)
+    |> filter_workflows_by_company(selected_company_id)
     
     # Cargar actividades, tickets, órdenes de producción y leads con filtros por empresa
-    activities = load_activities_with_company_filters(filters, _selected_company_id)
-    tickets = load_tickets_with_company_filters(filters, _selected_company_id)
-    production_orders = load_production_orders_with_company_filters(filters, _selected_company_id)
-    leads = load_leads_with_company_filters(filters, _selected_company_id)
+    activities = load_activities_with_company_filters(filters, selected_company_id)
+    tickets = load_tickets_with_company_filters(filters, selected_company_id)
+    production_orders = load_production_orders_with_company_filters(filters, selected_company_id)
+    leads = load_leads_with_company_filters(filters, selected_company_id)
     
     case current_view do
       "integrated" ->
         # Vista integrada - workflows específicos de la empresa
-        create_integrated_view(workflows, activities, tickets, production_orders, leads, _selected_company_id)
+        create_integrated_view(workflows, activities, tickets, production_orders, leads, selected_company_id)
       "individual" ->
         # Vista individual - mostrar workflows según la compañía
         create_individual_workflow_view(workflows, activities, tickets, production_orders, leads, filters)
       _ ->
-        create_integrated_view(workflows, activities, tickets, production_orders, leads, _selected_company_id)
+        create_integrated_view(workflows, activities, tickets, production_orders, leads, selected_company_id)
     end
   end
 
@@ -738,7 +886,7 @@ defmodule EvaaCrmWebGaepell.KanbanLive do
     leads
   end
 
-  defp create_integrated_view(workflows, activities, tickets, production_orders, leads, selected_company_id) do
+  defp create_integrated_view(workflows, activities, tickets, production_orders, leads, _selected_company_id) do
     # Crear estructura horizontal por workflow
     workflows
     |> Enum.map(fn workflow ->
@@ -870,7 +1018,7 @@ defmodule EvaaCrmWebGaepell.KanbanLive do
     create_integrated_view(workflows, activities, tickets, production_orders, leads, company_id)
   end
 
-  defp process_all_items(workflows, activities, tickets) do
+  defp process_all_items(_workflows, activities, tickets) do
     # Procesar actividades
     activities_items = activities
     |> Enum.map(fn activity ->
@@ -1082,7 +1230,7 @@ defmodule EvaaCrmWebGaepell.KanbanLive do
   end
 
   defp get_specialist_name(nil), do: nil
-  defp get_specialist_name(specialist_id) do
+  defp get_specialist_name(_specialist_id) do
     # Implementar cuando tengas el modelo Specialist
     nil
   end
@@ -1451,6 +1599,7 @@ defmodule EvaaCrmWebGaepell.KanbanLive do
         license_plate: t.license_plate,
         brand: t.brand,
         model: t.model,
+        ficha: t.ficha,
         status: t.status,
         updated_at: t.updated_at
       })
@@ -1591,7 +1740,7 @@ defmodule EvaaCrmWebGaepell.KanbanLive do
 
 
   @impl true
-  def handle_info({:feedback_status_changed, feedback_id, status, description}, socket) do
+  def handle_info({:feedback_status_changed, _feedback_id, status, description}, socket) do
     recent_activities = get_recent_activities()
     msg = "Cambio de estado en bug: " <> String.slice(description, 0, 30) <> " (" <> status <> ")"
     socket =
@@ -1600,4 +1749,51 @@ defmodule EvaaCrmWebGaepell.KanbanLive do
       |> push_event("actividad_reciente", %{message: msg})
     {:noreply, socket}
   end
+
+  # Funciones helper para el modal de crear camión
+  defp create_truck(params) do
+    %Truck{}
+    |> Truck.changeset(params)
+    |> Repo.insert()
+  end
+
+  defp get_existing_brands do
+    Repo.all(from t in Truck, select: t.brand, distinct: true)
+    |> Enum.filter(&(&1 != nil and &1 != ""))
+    |> Enum.sort()
+  end
+
+  defp get_existing_models do
+    Repo.all(from t in Truck, select: t.model, distinct: true)
+    |> Enum.filter(&(&1 != nil and &1 != ""))
+    |> Enum.sort()
+  end
+
+  defp get_existing_owners do
+    Repo.all(from t in Truck, select: t.owner, distinct: true)
+    |> Enum.filter(&(&1 != nil and &1 != ""))
+    |> Enum.sort()
+  end
+
+  defp filter_brands(query, brands) when is_binary(query) do
+    query = String.downcase(query)
+    brands
+    |> Enum.filter(&String.contains?(String.downcase(&1), query))
+    |> Enum.take(10)
+  end
+
+  defp filter_models(query, models) when is_binary(query) do
+    query = String.downcase(query)
+    models
+    |> Enum.filter(&String.contains?(String.downcase(&1), query))
+    |> Enum.take(10)
+  end
+
+  defp filter_owners(query, owners) when is_binary(query) do
+    query = String.downcase(query)
+    owners
+    |> Enum.filter(&String.contains?(String.downcase(&1), query))
+    |> Enum.take(10)
+  end
+
 end

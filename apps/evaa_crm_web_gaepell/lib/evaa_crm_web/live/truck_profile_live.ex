@@ -133,6 +133,46 @@ defmodule EvaaCrmWebGaepell.TruckProfileLive do
     end
   end
 
+  # Helper function to convert cm to inches
+  defp cm_to_inches(cm) when is_nil(cm), do: nil
+  defp cm_to_inches(cm) when is_number(cm) do
+    Float.round(cm / 2.54, 2)
+  end
+  defp cm_to_inches(cm) when is_binary(cm) do
+    case Float.parse(cm) do
+      {num, _} -> Float.round(num / 2.54, 2)
+      :error -> nil
+    end
+  end
+
+  # Helper function to convert inches to cm
+  defp inches_to_cm(inches) when is_nil(inches), do: nil
+  defp inches_to_cm(inches) when is_number(inches) do
+    Float.round(inches * 2.54, 2)
+  end
+  defp inches_to_cm(inches) when is_binary(inches) do
+    case Float.parse(inches) do
+      {num, _} -> Float.round(num * 2.54, 2)
+      :error -> nil
+    end
+  end
+
+  # Helper function to format measurements with both cm and inches
+  defp format_measurement_with_conversion(value, unit \\ "cm") when is_nil(value), do: "N/A"
+  defp format_measurement_with_conversion(value, unit) do
+    inches = cm_to_inches(value)
+    if inches do
+      "#{value} #{unit} (#{inches} in)"
+    else
+      "#{value} #{unit}"
+    end
+  end
+
+  # Helper function to convert measurement based on unit
+  defp convert_measurement(value, "cm"), do: value
+  defp convert_measurement(value, "inches"), do: inches_to_cm(value)
+  defp convert_measurement(value, _), do: value
+
   defp truck_status_label(truck) do
     if truck.status == "active", do: "Activo", else: "Mantenimiento"
   end
@@ -944,8 +984,12 @@ defmodule EvaaCrmWebGaepell.TruckProfileLive do
   end
 
   @impl true
-  def handle_event("update_tire_width", %{"truck" => truck_params}, socket) do
-    case Repo.update(Truck.changeset(socket.assigns.truck, truck_params)) do
+  def handle_event("update_tire_width", %{"truck" => truck_params, "unit" => unit}, socket) do
+    # Convert the value based on the selected unit
+    converted_value = convert_measurement(truck_params["rear_tire_width"], unit)
+    updated_params = Map.put(truck_params, "rear_tire_width", converted_value)
+    
+    case Repo.update(Truck.changeset(socket.assigns.truck, updated_params)) do
       {:ok, updated_truck} ->
         reloaded_truck = Repo.get(Truck, socket.assigns.truck.id)
         {:noreply, 
@@ -973,8 +1017,12 @@ defmodule EvaaCrmWebGaepell.TruckProfileLive do
   end
 
   @impl true
-  def handle_event("update_useful_length", %{"truck" => truck_params}, socket) do
-    case Repo.update(Truck.changeset(socket.assigns.truck, truck_params)) do
+  def handle_event("update_useful_length", %{"truck" => truck_params, "unit" => unit}, socket) do
+    # Convert the value based on the selected unit
+    converted_value = convert_measurement(truck_params["useful_length"], unit)
+    updated_params = Map.put(truck_params, "useful_length", converted_value)
+    
+    case Repo.update(Truck.changeset(socket.assigns.truck, updated_params)) do
       {:ok, updated_truck} ->
         reloaded_truck = Repo.get(Truck, socket.assigns.truck.id)
         {:noreply, 
@@ -1002,8 +1050,12 @@ defmodule EvaaCrmWebGaepell.TruckProfileLive do
   end
 
   @impl true
-  def handle_event("update_chassis_width", %{"truck" => truck_params}, socket) do
-    case Repo.update(Truck.changeset(socket.assigns.truck, truck_params)) do
+  def handle_event("update_chassis_width", %{"truck" => truck_params, "unit" => unit}, socket) do
+    # Convert the value based on the selected unit
+    converted_value = convert_measurement(truck_params["chassis_width"], unit)
+    updated_params = Map.put(truck_params, "chassis_width", converted_value)
+    
+    case Repo.update(Truck.changeset(socket.assigns.truck, updated_params)) do
       {:ok, updated_truck} ->
         reloaded_truck = Repo.get(Truck, socket.assigns.truck.id)
         {:noreply, 
@@ -1911,15 +1963,21 @@ defmodule EvaaCrmWebGaepell.TruckProfileLive do
   end
 
   @impl true
-  def handle_event("update_technical_info", %{"rear_tire_width" => rear_tire_width, "chassis_length" => chassis_length, "chassis_width" => chassis_width}, socket) do
+  def handle_event("update_technical_info", %{"rear_tire_width" => rear_tire_width, "useful_length" => useful_length, "chassis_width" => chassis_width, "rear_tire_width_unit" => rear_tire_width_unit, "useful_length_unit" => useful_length_unit, "chassis_width_unit" => chassis_width_unit}, socket) do
     IO.puts("=== UPDATE TECHNICAL INFO DEBUG ===")
-    IO.puts("Original values - rear_tire_width: #{rear_tire_width}, chassis_length: #{chassis_length}, chassis_width: #{chassis_width}")
+    IO.puts("Original values - rear_tire_width: #{rear_tire_width}, useful_length: #{useful_length}, chassis_width: #{chassis_width}")
+    IO.puts("Units - rear_tire_width: #{rear_tire_width_unit}, useful_length: #{useful_length_unit}, chassis_width: #{chassis_width_unit}")
+    
+    # Convert values based on selected units
+    converted_rear_tire_width = convert_measurement(rear_tire_width, rear_tire_width_unit)
+    converted_useful_length = convert_measurement(useful_length, useful_length_unit)
+    converted_chassis_width = convert_measurement(chassis_width, chassis_width_unit)
     
     # Preparar los parámetros para la actualización
     update_params = %{
-      "rear_tire_width" => String.to_integer(rear_tire_width),
-      "chassis_length" => String.to_integer(chassis_length),
-      "chassis_width" => String.to_integer(chassis_width)
+      "rear_tire_width" => converted_rear_tire_width,
+      "useful_length" => converted_useful_length,
+      "chassis_width" => converted_chassis_width
     }
     
     IO.puts("Update params: #{inspect(update_params)}")

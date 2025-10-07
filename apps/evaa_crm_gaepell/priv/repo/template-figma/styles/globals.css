@@ -1,0 +1,337 @@
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --font-size: 14px;
+  --background: #fafbfc;
+  --foreground: #1a1b23;
+  --card: #ffffff;
+  --card-foreground: #1a1b23;
+  --popover: #ffffff;
+  --popover-foreground: #1a1b23;
+  --primary: #fec50b; /* Color principal del logo */
+  --primary-foreground: #1a1b23;
+  --secondary: #f1f5f9;
+  --secondary-foreground: #334155;
+  --muted: #f8fafc;
+  --muted-foreground: #64748b;
+  --accent: #fec50b;
+  --accent-foreground: #1a1b23;
+  --destructive: #dc2626;
+  --destructive-foreground: #ffffff;
+  --border: #e2e8f0;
+  --input: #ffffff;
+  --input-background: #ffffff;
+  --switch-background: #cbd5e1;
+  --font-weight-medium: 500;
+  --font-weight-normal: 400;
+  --ring: #fec50b;
+  --chart-1: #fec50b;
+  --chart-2: #10b981;
+  --chart-3: #3b82f6;
+  --chart-4: #ef4444;
+  --chart-5: #8b5cf6;
+  --radius: 0.75rem;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #1a1b23;
+  --sidebar-primary: #fec50b;
+  --sidebar-primary-foreground: #1a1b23;
+  --sidebar-accent: #f8fafc;
+  --sidebar-accent-foreground: #334155;
+  --sidebar-border: #e2e8f0;
+  --sidebar-ring: #fec50b;
+  
+  /* Colores corporativos modernizados */
+  --success: #059669;
+  --success-foreground: #ffffff;
+  --warning: #f97316;
+  --warning-foreground: #ffffff;
+  --info: #0284c7;
+  --info-foreground: #ffffff;
+  
+  /* Gradientes modernos con el color del logo */
+  --gradient-primary: linear-gradient(135deg, #fec50b 0%, #f59e0b 50%, #eab308 100%);
+  --gradient-success: linear-gradient(135deg, #4ade80 0%, #22c55e 100%);
+  --gradient-warning: linear-gradient(135deg, #fb7185 0%, #ef4444 100%);
+  --gradient-danger: linear-gradient(135deg, #f87171 0%, #ef4444 100%);
+  --gradient-info: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
+  --gradient-accent: linear-gradient(135deg, #fec50b 0%, #f59e0b 100%);
+  
+  /* Gradientes complementarios */
+  --gradient-gold-blue: linear-gradient(135deg, #fec50b 0%, #3b82f6 100%);
+  --gradient-gold-green: linear-gradient(135deg, #fec50b 0%, #10b981 100%);
+  --gradient-gold-purple: linear-gradient(135deg, #fec50b 0%, #8b5cf6 100%);
+  
+  /* Sombras modernas */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  --shadow-gold: 0 10px 25px -5px rgb(254 197 11 / 0.2);
+}
+
+.dark {
+  --background: #0a0a0b;
+  --foreground: #fafafa;
+  --card: #111111;
+  --card-foreground: #fafafa;
+  --popover: #111111;
+  --popover-foreground: #fafafa;
+  --primary: #fec50b;
+  --primary-foreground: #0a0a0b;
+  --secondary: #1f1f23;
+  --secondary-foreground: #e4e4e7;
+  --muted: #18181b;
+  --muted-foreground: #a1a1aa;
+  --accent: #fec50b;
+  --accent-foreground: #0a0a0b;
+  --destructive: #ef4444;
+  --destructive-foreground: #fafafa;
+  --border: #27272a;
+  --input: #18181b;
+  --input-background: #18181b;
+  --switch-background: #3f3f46;
+  --ring: #fec50b;
+  --chart-1: #fec50b;
+  --chart-2: #22c55e;
+  --chart-3: #3b82f6;
+  --chart-4: #ef4444;
+  --chart-5: #a855f7;
+  --sidebar: #0f0f10;
+  --sidebar-foreground: #fafafa;
+  --sidebar-primary: #fec50b;
+  --sidebar-primary-foreground: #0a0a0b;
+  --sidebar-accent: #18181b;
+  --sidebar-accent-foreground: #e4e4e7;
+  --sidebar-border: #27272a;
+  --sidebar-ring: #fec50b;
+  
+  /* Colores corporativos para dark mode */
+  --success: #22c55e;
+  --success-foreground: #0a0a0b;
+  --warning: #f97316;
+  --warning-foreground: #fafafa;
+  --info: #3b82f6;
+  --info-foreground: #fafafa;
+  
+  /* Gradientes para dark mode */
+  --gradient-primary: linear-gradient(135deg, #fec50b 0%, #f59e0b 50%, #eab308 100%);
+  --gradient-success: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+  --gradient-warning: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+  --gradient-danger: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  --gradient-info: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  --gradient-accent: linear-gradient(135deg, #fec50b 0%, #f59e0b 100%);
+  
+  /* Gradientes complementarios para dark mode */
+  --gradient-gold-blue: linear-gradient(135deg, #fec50b 0%, #3b82f6 100%);
+  --gradient-gold-green: linear-gradient(135deg, #fec50b 0%, #22c55e 100%);
+  --gradient-gold-purple: linear-gradient(135deg, #fec50b 0%, #a855f7 100%);
+  
+  --shadow-gold: 0 10px 25px -5px rgb(254 197 11 / 0.3);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-input-background: var(--input-background);
+  --color-switch-background: var(--switch-background);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  
+  /* Colores corporativos como clases de Tailwind */
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/**
+ * Base typography. This is not applied to elements which have an ancestor with a Tailwind text class.
+ */
+@layer base {
+  :where(:not(:has([class*=" text-"]), :not(:has([class^="text-"])))) {
+    h1 {
+      font-size: var(--text-2xl);
+      font-weight: var(--font-weight-medium);
+      line-height: 1.5;
+    }
+
+    h2 {
+      font-size: var(--text-xl);
+      font-weight: var(--font-weight-medium);
+      line-height: 1.5;
+    }
+
+    h3 {
+      font-size: var(--text-lg);
+      font-weight: var(--font-weight-medium);
+      line-height: 1.5;
+    }
+
+    h4 {
+      font-size: var(--text-base);
+      font-weight: var(--font-weight-medium);
+      line-height: 1.5;
+    }
+
+    p {
+      font-size: var(--text-base);
+      font-weight: var(--font-weight-normal);
+      line-height: 1.5;
+    }
+
+    label {
+      font-size: var(--text-base);
+      font-weight: var(--font-weight-medium);
+      line-height: 1.5;
+    }
+
+    button {
+      font-size: var(--text-base);
+      font-weight: var(--font-weight-medium);
+      line-height: 1.5;
+    }
+
+    input {
+      font-size: var(--text-base);
+      font-weight: var(--font-weight-normal);
+      line-height: 1.5;
+    }
+  }
+}
+
+html {
+  font-size: var(--font-size);
+}
+
+/* Clases utilitarias modernas */
+@layer utilities {
+  .gradient-primary {
+    background: var(--gradient-primary);
+  }
+  
+  .gradient-success {
+    background: var(--gradient-success);
+  }
+  
+  .gradient-warning {
+    background: var(--gradient-warning);
+  }
+  
+  .gradient-danger {
+    background: var(--gradient-danger);
+  }
+  
+  .gradient-info {
+    background: var(--gradient-info);
+  }
+  
+  .gradient-accent {
+    background: var(--gradient-accent);
+  }
+  
+  /* Gradientes complementarios */
+  .gradient-gold-blue {
+    background: var(--gradient-gold-blue);
+  }
+  
+  .gradient-gold-green {
+    background: var(--gradient-gold-green);
+  }
+  
+  .gradient-gold-purple {
+    background: var(--gradient-gold-purple);
+  }
+  
+  .glass-effect {
+    backdrop-filter: blur(20px);
+    background: rgba(255, 255, 255, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+  }
+  
+  .dark .glass-effect {
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  
+  .shadow-glow {
+    box-shadow: 0 0 20px rgba(254, 197, 11, 0.25);
+  }
+  
+  .shadow-gold {
+    box-shadow: var(--shadow-gold);
+  }
+  
+  .hover-lift {
+    transition: transform 0.2s ease-in-out;
+  }
+  
+  .hover-lift:hover {
+    transform: translateY(-2px);
+  }
+  
+  /* Toggle para dark mode */
+  .theme-toggle {
+    transition: all 0.3s ease;
+  }
+  
+  /* Clases de texto para colores corporativos */
+  .text-success {
+    color: var(--color-success);
+  }
+  
+  .text-warning {
+    color: var(--color-warning);
+  }
+  
+  .text-info {
+    color: var(--color-info);
+  }
+  
+  .text-destructive {
+    color: var(--color-destructive);
+  }
+}

@@ -36,8 +36,8 @@ const evaluationTypes = [
 ];
 
 const damageAreas = [
-  "Frontal", "Lateral Izquierdo", "Lateral Derecho", "Trasero", 
-  "Techo", "Cabina", "Caja/Remolque", "Llantas", "Motor", "Interior"
+  "Frontal", "Lateral Conductor", "Lateral Pasajero", "Puertas Traseras", 
+  "Bisagras", "Caja/Remolque", "Paneles"
 ];
 
 const severityLevels = [

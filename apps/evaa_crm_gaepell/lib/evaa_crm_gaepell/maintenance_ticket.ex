@@ -44,6 +44,7 @@ defmodule EvaaCrmGaepell.MaintenanceTicket do
     field :insurance_company, :string
     field :warranty_details, :string
     field :progress, :integer, default: 0
+    field :ticket_code, :string
 
     # Campos de check-out (temporalmente comentados hasta que se resuelva el problema de migración)
     # field :checkout_driver_cedula, :string
@@ -66,7 +67,7 @@ defmodule EvaaCrmGaepell.MaintenanceTicket do
 
   def changeset(ticket, attrs) do
     ticket
-    |> cast(attrs, [:title, :description, :priority, :truck_id, :specialist_id, :entry_date, :mileage, :fuel_level, :visible_damage, :damage_photos, :responsible_signature, :signature_url, :status, :exit_date, :exit_notes, :business_id, :color, :deliverer_name, :document_type, :document_number, :deliverer_phone, :company_name, :position, :employee_number, :authorization_type, :special_conditions, :entry_type, :production_status, :quotation_id, :box_type, :estimated_delivery, :evaluation_type, :evaluation_notes, :estimated_repair_cost, :insurance_claim_number, :insurance_company, :warranty_details, :progress])
+    |> cast(attrs, [:title, :description, :priority, :truck_id, :specialist_id, :entry_date, :mileage, :fuel_level, :visible_damage, :damage_photos, :responsible_signature, :signature_url, :status, :exit_date, :exit_notes, :business_id, :color, :deliverer_name, :document_type, :document_number, :deliverer_phone, :company_name, :position, :employee_number, :authorization_type, :special_conditions, :entry_type, :production_status, :quotation_id, :box_type, :estimated_delivery, :evaluation_type, :evaluation_notes, :estimated_repair_cost, :insurance_claim_number, :insurance_company, :warranty_details, :progress, :ticket_code])
     |> validate_required([:title, :truck_id, :business_id])
     |> validate_inclusion(:priority, ["low", "medium", "high", "urgent"])
     |> validate_inclusion(:status, ["check_in", "in_workshop", "final_review", "car_wash", "check_out", "cancelled", "recepcion"])
@@ -86,8 +87,15 @@ defmodule EvaaCrmGaepell.MaintenanceTicket do
   Crea un ticket de mantenimiento y registra la actividad
   """
   def create_ticket(attrs, user_id) do
+    # Generar código de ticket si no se proporciona uno
+    attrs_with_code = if Map.has_key?(attrs, "ticket_code") and not is_nil(attrs["ticket_code"]) do
+      attrs
+    else
+      Map.put(attrs, "ticket_code", EvaaCrmGaepell.TicketCodeGenerator.generate_ticket_code(:maintenance))
+    end
+
     case %__MODULE__{}
-         |> changeset(attrs)
+         |> changeset(attrs_with_code)
          |> EvaaCrmGaepell.Repo.insert() do
       {:ok, ticket} ->
         # Registrar log de creación

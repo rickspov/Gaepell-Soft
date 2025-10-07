@@ -871,7 +871,7 @@ defmodule EvaaCrmWebGaepell.MaintenanceCheckinWizardLive do
           <div>
             <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">Áreas a Mantener</label>
             <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
-              <%= for area <- ["Motor", "Transmisión", "Sistema Eléctrico", "Frenos", "Suspensión", "Dirección", "Llantas", "Carrocería", "Interior", "Sistema de Combustible"] do %>
+              <%= for area <- ["Motor", "Transmisión", "Frenos", "Suspensión", "Dirección", "Llantas", "Carrocería", "Paneles", "Sistema de Combustible"] do %>
                 <div class="flex items-center space-x-2">
                   <input type="checkbox"
                          id={area}
@@ -1031,6 +1031,7 @@ defmodule EvaaCrmWebGaepell.MaintenanceCheckinWizardLive do
           <div class="space-y-4">
             <!-- Botón para abrir modal de subida -->
             <button 
+              type="button"
               phx-click="show_upload_modal" 
               class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
             >

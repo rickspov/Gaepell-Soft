@@ -24,6 +24,7 @@ defmodule EvaaCrmWebGaepell.TicketsLive do
         |> assign(:ticket_to_delete, nil)
         |> assign(:show_status_modal, false)
         |> assign(:selected_order_id, nil)
+        |> assign(:view_mode, "table")
         |> load_maintenance_tickets()
         |> load_production_orders()
         |> load_evaluations()
@@ -51,6 +52,7 @@ defmodule EvaaCrmWebGaepell.TicketsLive do
         |> assign(:ticket_to_delete, nil)
         |> assign(:show_status_modal, false)
         |> assign(:selected_order_id, nil)
+        |> assign(:view_mode, "table")
         |> load_maintenance_tickets()
         |> load_production_orders()
         |> load_evaluations()
@@ -78,6 +80,7 @@ defmodule EvaaCrmWebGaepell.TicketsLive do
         |> assign(:ticket_to_delete, nil)
         |> assign(:show_status_modal, false)
         |> assign(:selected_order_id, nil)
+        |> assign(:view_mode, "table")
         |> load_maintenance_tickets()
         |> load_production_orders()
         |> load_evaluations()
@@ -105,6 +108,7 @@ defmodule EvaaCrmWebGaepell.TicketsLive do
         |> assign(:ticket_to_delete, nil)
         |> assign(:show_status_modal, false)
         |> assign(:selected_order_id, nil)
+        |> assign(:view_mode, "table")
         |> load_maintenance_tickets()
         |> load_production_orders()
         |> load_evaluations()
@@ -132,6 +136,11 @@ defmodule EvaaCrmWebGaepell.TicketsLive do
         |> load_production_orders()
         |> load_evaluations()
         |> load_completed_tickets()}
+  end
+
+  @impl true
+  def handle_event("change_view_mode", %{"mode" => mode}, socket) do
+    {:noreply, assign(socket, :view_mode, mode)}
   end
 
   @impl true
@@ -286,7 +295,8 @@ defmodule EvaaCrmWebGaepell.TicketsLive do
         status_label: get_completion_status_label(ticket.status),
         inserted_at: ticket.inserted_at,
         completed_at: ticket.updated_at,
-        truck: ticket.truck
+        truck: ticket.truck,
+        ticket_code: ticket.ticket_code
       }
     end)
 
@@ -302,7 +312,8 @@ defmodule EvaaCrmWebGaepell.TicketsLive do
         status_label: get_completion_status_label(order.status),
         inserted_at: order.inserted_at,
         completed_at: order.updated_at,
-        truck: nil
+        truck: nil,
+        ticket_code: order.ticket_code
       }
     end)
 
@@ -321,6 +332,80 @@ defmodule EvaaCrmWebGaepell.TicketsLive do
     else
       "px-4 py-2 text-sm font-medium bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300"
     end
+  end
+
+  defp view_mode_class(current_mode, mode) do
+    if current_mode == mode do
+      "px-3 py-2 text-sm font-medium bg-blue-600 text-white"
+    else
+      "px-3 py-2 text-sm font-medium bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+    end
+  end
+
+  # Helper para obtener fotos según el tipo de ticket
+  defp get_ticket_photos(ticket, ticket_type) do
+    case ticket_type do
+      "maintenance" -> Map.get(ticket, :damage_photos, [])
+      "evaluation" -> Map.get(ticket, :photos, [])
+      "production" -> Map.get(ticket, :photos, [])
+      _ -> []
+    end
+  end
+
+  # Helper para parsear información de archivos
+  defp parse_file_info(file) when is_binary(file) do
+    %{
+      path: file,
+      description: nil,
+      original_name: Path.basename(file),
+      size: nil,
+      content_type: nil
+    }
+  end
+
+  defp parse_file_info(file) when is_map(file) do
+    %{
+      path: Map.get(file, :path, ""),
+      description: Map.get(file, :description, nil),
+      original_name: Map.get(file, :original_name, "archivo"),
+      size: Map.get(file, :size, nil),
+      content_type: Map.get(file, :content_type, nil)
+    }
+  end
+
+  defp parse_file_info(file) when is_list(file) do
+    # Si es una lista, tomar el primer elemento
+    case file do
+      [first | _] -> parse_file_info(first)
+      [] -> %{path: "", description: nil, original_name: "archivo", size: nil, content_type: nil}
+    end
+  end
+
+  defp parse_file_info(_) do
+    %{path: "", description: nil, original_name: "archivo", size: nil, content_type: nil}
+  end
+
+  # Helper para obtener preview de medios
+  defp get_media_preview(ticket, ticket_type) do
+    photos = get_ticket_photos(ticket, ticket_type) || []
+    
+    # Tomar solo las primeras 3 fotos para el preview
+    preview_photos = Enum.take(photos, 3)
+    
+    # Parsear información de archivos
+    parsed_photos = Enum.map(preview_photos, fn photo ->
+      try do
+        parse_file_info(photo)
+      rescue
+        _ -> %{path: to_string(photo), description: nil, original_name: "archivo", size: nil, content_type: nil}
+      end
+    end)
+    
+    %{
+      photos: parsed_photos,
+      total_count: length(photos),
+      has_more: length(photos) > 3
+    }
   end
 
   defp production_tab_class(active_tab) do
@@ -353,119 +438,330 @@ defmodule EvaaCrmWebGaepell.TicketsLive do
         </div>
       </div>
 
-      <!-- Tabs -->
-      <div class="mb-6">
+      <!-- Tabs and View Toggle -->
+      <div class="mb-6 flex justify-between items-center">
         <div class="inline-flex rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-          <button phx-click="set_tab" phx-value-tab="maintenance" class={tab_class(@active_tab, :maintenance)}>Mantenimiento</button>
           <button phx-click="set_tab" phx-value-tab="evaluation" class={tab_class(@active_tab, :evaluation)}>Evaluaciones</button>
+          <button phx-click="set_tab" phx-value-tab="maintenance" class={tab_class(@active_tab, :maintenance)}>Mantenimiento</button>
           <button phx-click="set_tab" phx-value-tab="production" class={tab_class(@active_tab, :production)}>Producción</button>
           <button phx-click="set_tab" phx-value-tab="completed" class={tab_class(@active_tab, :completed)}>Completados</button>
         </div>
+        
+        <!-- View Mode Toggle -->
+        <div class="flex items-center gap-2">
+          <span class="text-sm text-gray-600 dark:text-gray-400">Vista:</span>
+          <div class="inline-flex rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <button phx-click="change_view_mode" phx-value-mode="table" class={view_mode_class(@view_mode, "table")} title="Vista de tabla">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0V4a1 1 0 011-1h16a1 1 0 011 1v16a1 1 0 01-1 1H4a1 1 0 01-1-1z"/>
+              </svg>
+            </button>
+            <button phx-click="change_view_mode" phx-value-mode="cards" class={view_mode_class(@view_mode, "cards")} title="Vista de tarjetas">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+              </svg>
+            </button>
+          </div>
+        </div>
       </div>
 
-      <%= if @active_tab == :maintenance do %>
-        <!-- Mensaje informativo para el tab de Mantenimiento -->
-        <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-8 text-center">
-          <svg class="mx-auto h-16 w-16 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-          </svg>
-          <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">Tickets de Mantenimiento</h3>
-          <p class="text-gray-500 dark:text-gray-400 mb-4">
-            Los tickets de mantenimiento activos se muestran en el tab "Completados" cuando están en progreso.
-          </p>
-          <p class="text-sm text-gray-400 dark:text-gray-500">
-            Para ver los tickets completados, ve al tab "Completados".
-          </p>
-        </div>
-      <% else %>
-        <%= if @active_tab == :evaluation do %>
+      <%= if @active_tab == :evaluation do %>
+        <%= if @view_mode == "table" do %>
           <!-- Tabla de Evaluaciones -->
-        <div class="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
-          <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-              <thead class="bg-gray-50 dark:bg-gray-700">
-                <tr>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">ID</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Título</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Camión</th>
-                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Tipo</th>
-                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Propietario</th>
-                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Fecha</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Acciones</th>
+          <div class="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+            <thead class="bg-gray-50 dark:bg-gray-700">
+              <tr>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Código</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Ficha</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Camión</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Propietario</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Tipo</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Fecha de Creación</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Acciones</th>
+              </tr>
+            </thead>
+            <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+              <%= for evaluation <- @evaluations do %>
+                <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                    <%= evaluation.ticket_code || "-" %>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                    <%= if evaluation.truck && evaluation.truck.ficha do %>
+                      <%= evaluation.truck.ficha %>
+                    <% else %>
+                      -
+                    <% end %>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                    <%= if evaluation.truck do %>
+                      <%= evaluation.truck.brand %> <%= evaluation.truck.model %> (<%= evaluation.truck.license_plate %>)
+                    <% else %>
+                      Sin camión asignado
+                    <% end %>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                    <%= evaluation.truck && evaluation.truck.owner %>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <span class={"px-2 inline-flex text-xs leading-5 font-semibold rounded-full " <> evaluation_type_color(evaluation.evaluation_type)}>
+                      <%= get_evaluation_type_label(evaluation.evaluation_type) %>
+                    </span>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                    <%= Calendar.strftime(evaluation.inserted_at, "%d/%m/%Y") %>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <div class="flex space-x-2">
+                      <a href={"/tickets/#{evaluation.id}"} 
+                         class="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300" 
+                         title="Ver detalles">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                        </svg>
+                      </a>
+                      <button phx-click="convert_evaluation_to_maintenance" 
+                              phx-value-evaluation_id={evaluation.id}
+                              class="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300"
+                              title="Convertir a mantenimiento">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                        </svg>
+                      </button>
+                      <button phx-click="delete_evaluation" 
+                              phx-value-id={evaluation.id} 
+                              class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                              title="Eliminar evaluación"
+                              onclick="return confirm('¿Estás seguro de que quieres eliminar esta evaluación?')">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                        </svg>
+                      </button>
+                    </div>
+                  </td>
                 </tr>
-              </thead>
-              <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                <%= for evaluation <- @evaluations do %>
-                  <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">#<%= evaluation.id %></td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                      <%= evaluation.title %>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                      <div>
-                        <div class="font-medium"><%= evaluation.truck && (evaluation.truck.brand <> " " <> evaluation.truck.model) %></div>
-                        <div class="text-gray-500 dark:text-gray-400"><%= evaluation.truck && evaluation.truck.license_plate %></div>
-                      </div>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                      <span class={evaluation_type_color(evaluation.evaluation_type) <> " inline-flex px-2 py-1 text-xs font-semibold rounded-full"}>
-                        <%= get_evaluation_type_label(evaluation.evaluation_type) %>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+        <% else %>
+          <!-- Vista de Cards para Evaluaciones -->
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <%= for evaluation <- @evaluations do %>
+              <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-all duration-200">
+                <!-- Card Header -->
+                <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+                  <div class="flex items-start justify-between mb-4">
+                    <div>
+                      <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+                        <%= if evaluation.truck do %>
+                          <%= evaluation.truck.brand %> <%= evaluation.truck.model %>
+                        <% else %>
+                          Sin camión asignado
+                        <% end %>
+                      </h3>
+                      <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                        <%= evaluation.title %>
+                      </p>
+                    </div>
+                    <span class={"px-3 py-1 text-xs font-semibold rounded-full " <> evaluation_type_color(evaluation.evaluation_type)}>
+                      <%= get_evaluation_type_label(evaluation.evaluation_type) %>
+                    </span>
+                  </div>
+                  
+                  <!-- Truck Info -->
+                  <%= if evaluation.truck do %>
+                    <div class="flex gap-2 mb-3">
+                      <span class="text-xs bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 px-2 py-1 rounded">
+                        Placa: <%= evaluation.truck.license_plate %>
                       </span>
-                    </td>
-                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                       <%= evaluation.truck && evaluation.truck.owner %>
-                     </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                      <%= Calendar.strftime(evaluation.inserted_at, "%d/%m/%Y") %>
-                    </td>
-                                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                       <div class="flex space-x-2">
-                         <a href={"/tickets/#{evaluation.id}"} class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300" title="Ver detalles">
-                           <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-                             <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                             <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-                           </svg>
-                         </a>
-                         <a href={"/trucks/#{evaluation.truck_id}"} class="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300" title="Ver perfil del camión">
-                           <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-                             <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18.75a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 0 1-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 0 0-3.213-9.193 2.056 2.056 0 0 0-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 0 0-10.026 0 1.106 1.106 0 0 0-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12"/>
-                           </svg>
-                         </a>
-                         <button phx-click="convert_evaluation_to_maintenance" phx-value-evaluation_id={evaluation.id}
-                                 class="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300"
-                                 title="Convertir a mantenimiento">
-                           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-                           </svg>
-                         </button>
-                         <button phx-click="delete_evaluation" phx-value-evaluation_id={evaluation.id}
-                                 class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
-                                 title="Eliminar evaluación"
-                                 onclick="return confirm('¿Estás seguro de que quieres eliminar esta evaluación?')">
-                           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                           </svg>
-                         </button>
-                       </div>
-                     </td>
-                  </tr>
-                <% end %>
-              </tbody>
-            </table>
+                      <%= if evaluation.truck.ficha do %>
+                        <span class="text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 px-2 py-1 rounded">
+                          Ficha: <%= evaluation.truck.ficha %>
+                        </span>
+                      <% end %>
+                    </div>
+                  <% end %>
+                </div>
+                
+                <!-- Card Body -->
+                <div class="p-6">
+                  <div class="space-y-3">
+                    <!-- Código del Ticket -->
+                    <div class="flex justify-between items-center">
+                      <span class="text-sm text-gray-500 dark:text-gray-400">Código:</span>
+                      <span class="text-sm font-medium text-gray-900 dark:text-white">
+                        <%= evaluation.ticket_code || "-" %>
+                      </span>
+                    </div>
+                    
+                    <!-- Propietario -->
+                    <%= if evaluation.truck && evaluation.truck.owner do %>
+                      <div class="flex justify-between items-center">
+                        <span class="text-sm text-gray-500 dark:text-gray-400">Propietario:</span>
+                        <span class="text-sm font-medium text-gray-900 dark:text-white">
+                          <%= evaluation.truck.owner %>
+                        </span>
+                      </div>
+                    <% end %>
+                    
+                    <!-- Fecha de Creación -->
+                    <div class="flex justify-between items-center">
+                      <span class="text-sm text-gray-500 dark:text-gray-400">Creado:</span>
+                      <span class="text-sm font-medium text-gray-900 dark:text-white">
+                        <%= Calendar.strftime(evaluation.inserted_at, "%d/%m/%Y %H:%M") %>
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <!-- Media Preview Section -->
+                  <%= if get_media_preview(evaluation, "evaluation").total_count > 0 do %>
+                    <% media_preview = get_media_preview(evaluation, "evaluation") %>
+                    <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                      <div class="flex items-center justify-between mb-3">
+                        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Archivos adjuntos</span>
+                        <span class="text-xs text-gray-500 dark:text-gray-400">
+                          <%= media_preview.total_count %> archivo<%= if media_preview.total_count != 1, do: "s" %>
+                        </span>
+                      </div>
+                      
+                      <!-- Thumbnail Grid -->
+                      <div class="grid grid-cols-3 gap-2">
+                        <%= for {photo, index} <- Enum.with_index(media_preview.photos) do %>
+                          <div class="relative group">
+                            <%= if String.ends_with?(String.downcase(photo.path), [".jpg", ".jpeg", ".png", ".gif"]) do %>
+                              <!-- Image Thumbnail -->
+                              <div class="aspect-square bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
+                                <img src={photo.path} 
+                                     alt={photo.original_name}
+                                     class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                                     loading="lazy"
+                                     onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                <div class="w-full h-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center" style="display: none;">
+                                  <svg class="h-6 w-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                  </svg>
+                                </div>
+                              </div>
+                            <% else %>
+                              <!-- Document Icon -->
+                              <div class="aspect-square bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center">
+                                <%= cond do %>
+                                  <% String.ends_with?(String.downcase(photo.path), ".pdf") -> %>
+                                    <div class="text-center">
+                                      <svg class="h-8 w-8 text-red-500 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                                      </svg>
+                                      <p class="text-xs text-gray-600 dark:text-gray-400 font-medium mt-1">PDF</p>
+                                    </div>
+                                  <% String.ends_with?(String.downcase(photo.path), [".doc", ".docx"]) -> %>
+                                    <div class="text-center">
+                                      <svg class="h-8 w-8 text-blue-500 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                      </svg>
+                                      <p class="text-xs text-gray-600 dark:text-gray-400 font-medium mt-1">Word</p>
+                                    </div>
+                                  <% String.ends_with?(String.downcase(photo.path), [".xls", ".xlsx"]) -> %>
+                                    <div class="text-center">
+                                      <svg class="h-8 w-8 text-green-500 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"/>
+                                      </svg>
+                                      <p class="text-xs text-gray-600 dark:text-gray-400 font-medium mt-1">Excel</p>
+                                    </div>
+                                  <% true -> %>
+                                    <div class="text-center">
+                                      <svg class="h-8 w-8 text-gray-500 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                      </svg>
+                                      <p class="text-xs text-gray-600 dark:text-gray-400 font-medium mt-1">Archivo</p>
+                                    </div>
+                                <% end %>
+                              </div>
+                            <% end %>
+                            
+                            <!-- Overlay with file name -->
+                            <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-200 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100">
+                              <p class="text-white text-xs font-medium text-center px-1 truncate">
+                                <%= photo.original_name %>
+                              </p>
+                            </div>
+                          </div>
+                        <% end %>
+                        
+                        <!-- Show "more" indicator if there are more than 3 files -->
+                        <%= if media_preview.has_more do %>
+                          <div class="aspect-square bg-gray-200 dark:bg-gray-600 rounded-lg flex items-center justify-center">
+                            <div class="text-center">
+                              <svg class="h-6 w-6 text-gray-500 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                              </svg>
+                              <p class="text-xs text-gray-500 font-medium mt-1">+<%= media_preview.total_count - 3 %></p>
+                            </div>
+                          </div>
+                        <% end %>
+                      </div>
+                    </div>
+                  <% end %>
+                </div>
+                
+                <!-- Card Footer -->
+                <div class="px-6 py-4 bg-gray-50 dark:bg-gray-700 rounded-b-xl">
+                  <div class="flex gap-2">
+                    <a href={"/tickets/#{evaluation.id}"} class="flex-1 px-3 py-2 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-1">
+                      <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                      </svg>
+                      Ver
+                    </a>
+                    <button phx-click="convert_evaluation_to_maintenance" phx-value-evaluation_id={evaluation.id} class="flex-1 px-3 py-2 text-xs bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-1">
+                      <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
+                      </svg>
+                      Convertir
+                    </button>
+                    <button phx-click="delete_evaluation" phx-value-evaluation_id={evaluation.id} class="px-3 py-2 text-xs bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center justify-center" onclick="return confirm('¿Estás seguro de que quieres eliminar esta evaluación?')">
+                      <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            <% end %>
           </div>
           
-          <%= if Enum.empty?(@evaluations) do %>
+          <%= if length(@evaluations) == 0 do %>
             <div class="text-center py-12">
-              <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
               </svg>
               <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-white">No hay evaluaciones</h3>
               <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                No se encontraron evaluaciones para mostrar.
+                Las evaluaciones aparecerán aquí cuando se creen.
               </p>
             </div>
           <% end %>
-        </div>
+        <% end %>
+      <% else %>
+        <%= if @active_tab == :maintenance do %>
+          <!-- Mensaje informativo para el tab de Mantenimiento -->
+          <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-8 text-center">
+            <svg class="mx-auto h-16 w-16 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+            </svg>
+            <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">Tickets de Mantenimiento</h3>
+            <p class="text-gray-500 dark:text-gray-400 mb-4">
+              Los tickets de mantenimiento activos se muestran en el tab "Completados" cuando están en progreso.
+            </p>
+            <p class="text-sm text-gray-400 dark:text-gray-500">
+              Para ver los tickets completados, ve al tab "Completados".
+            </p>
+          </div>
         <% else %>
           <%= if @active_tab == :production do %>
             <!-- Tabla de Órdenes de Producción -->
@@ -603,8 +899,9 @@ defmodule EvaaCrmWebGaepell.TicketsLive do
       <% end %>
 
       <%= if @active_tab == :completed do %>
-        <!-- Tabla de Tickets de Mantenimiento Completados -->
-        <div class="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-md mb-6">
+        <%= if @view_mode == "table" do %>
+          <!-- Tabla de Tickets de Mantenimiento Completados -->
+          <div class="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-md mb-6">
           <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
             <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Tickets de Mantenimiento Completados</h3>
           </div>
@@ -612,6 +909,7 @@ defmodule EvaaCrmWebGaepell.TicketsLive do
             <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
               <thead class="bg-gray-50 dark:bg-gray-700">
                 <tr>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Código</th>
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">ID</th>
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Título</th>
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Propietario</th>
@@ -625,6 +923,9 @@ defmodule EvaaCrmWebGaepell.TicketsLive do
               <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                 <%= for ticket <- @completed_maintenance_tickets do %>
                   <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                      <%= ticket.ticket_code || "-" %>
+                    </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">#<%= ticket.id %></td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white"><%= ticket.title %></td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white"><%= ticket.client_name %></td>
@@ -678,6 +979,7 @@ defmodule EvaaCrmWebGaepell.TicketsLive do
             <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
               <thead class="bg-gray-50 dark:bg-gray-700">
                 <tr>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Código</th>
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">ID</th>
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Título</th>
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Cliente</th>
@@ -691,6 +993,9 @@ defmodule EvaaCrmWebGaepell.TicketsLive do
               <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                 <%= for order <- @completed_production_orders do %>
                   <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                      <%= order.ticket_code || "-" %>
+                    </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">#<%= order.id %></td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white"><%= order.title %></td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white"><%= order.client_name %></td>
@@ -734,6 +1039,362 @@ defmodule EvaaCrmWebGaepell.TicketsLive do
             </div>
           <% end %>
         </div>
+        <% else %>
+          <!-- Vista de Cards para Tickets Completados -->
+          <div class="space-y-6">
+            <!-- Tickets de Mantenimiento Completados -->
+            <div>
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Tickets de Mantenimiento Completados</h3>
+              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <%= for ticket <- @completed_maintenance_tickets do %>
+                  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-all duration-200">
+                    <!-- Card Header -->
+                    <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+                      <div class="flex items-start justify-between mb-4">
+                        <div>
+                          <h4 class="text-lg font-semibold text-gray-900 dark:text-white">
+                            <%= ticket.title %>
+                          </h4>
+                          <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                            <%= ticket.license_plate %>
+                          </p>
+                        </div>
+                        <span class="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 px-3 py-1 text-xs font-semibold rounded-full">
+                          <%= ticket.status_label %>
+                        </span>
+                      </div>
+                    </div>
+                    
+                    <!-- Card Body -->
+                    <div class="p-6">
+                      <div class="space-y-3">
+                        <!-- Código del Ticket -->
+                        <div class="flex justify-between items-center">
+                          <span class="text-sm text-gray-500 dark:text-gray-400">Código:</span>
+                          <span class="text-sm font-medium text-gray-900 dark:text-white">
+                            <%= ticket.ticket_code || "-" %>
+                          </span>
+                        </div>
+                        
+                        <!-- Propietario -->
+                        <div class="flex justify-between items-center">
+                          <span class="text-sm text-gray-500 dark:text-gray-400">Propietario:</span>
+                          <span class="text-sm font-medium text-gray-900 dark:text-white">
+                            <%= ticket.client_name %>
+                          </span>
+                        </div>
+                        
+                        <!-- Fecha de Creación -->
+                        <div class="flex justify-between items-center">
+                          <span class="text-sm text-gray-500 dark:text-gray-400">Creado:</span>
+                          <span class="text-sm font-medium text-gray-900 dark:text-white">
+                            <%= Calendar.strftime(ticket.inserted_at, "%d/%m/%Y %H:%M") %>
+                          </span>
+                        </div>
+                        
+                        <!-- Fecha de Completado -->
+                        <div class="flex justify-between items-center">
+                          <span class="text-sm text-gray-500 dark:text-gray-400">Completado:</span>
+                          <span class="text-sm font-medium text-gray-900 dark:text-white">
+                            <%= Calendar.strftime(ticket.completed_at, "%d/%m/%Y %H:%M") %>
+                          </span>
+                        </div>
+                      </div>
+                      
+                      <!-- Media Preview Section -->
+                      <%= if get_media_preview(ticket, "maintenance").total_count > 0 do %>
+                        <% media_preview = get_media_preview(ticket, "maintenance") %>
+                        <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                          <div class="flex items-center justify-between mb-3">
+                            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Archivos adjuntos</span>
+                            <span class="text-xs text-gray-500 dark:text-gray-400">
+                              <%= media_preview.total_count %> archivo<%= if media_preview.total_count != 1, do: "s" %>
+                            </span>
+                          </div>
+                          
+                          <!-- Thumbnail Grid -->
+                          <div class="grid grid-cols-3 gap-2">
+                            <%= for {photo, index} <- Enum.with_index(media_preview.photos) do %>
+                              <div class="relative group">
+                                <%= if String.ends_with?(String.downcase(photo.path), [".jpg", ".jpeg", ".png", ".gif"]) do %>
+                                  <!-- Image Thumbnail -->
+                                  <div class="aspect-square bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
+                                    <img src={photo.path} 
+                                         alt={photo.original_name}
+                                         class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                                         loading="lazy"
+                                         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                    <div class="w-full h-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center" style="display: none;">
+                                      <svg class="h-6 w-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                      </svg>
+                                    </div>
+                                  </div>
+                                <% else %>
+                                  <!-- Document Icon -->
+                                  <div class="aspect-square bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center">
+                                    <%= cond do %>
+                                      <% String.ends_with?(String.downcase(photo.path), ".pdf") -> %>
+                                        <div class="text-center">
+                                          <svg class="h-8 w-8 text-red-500 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                                          </svg>
+                                          <p class="text-xs text-gray-600 dark:text-gray-400 font-medium mt-1">PDF</p>
+                                        </div>
+                                      <% String.ends_with?(String.downcase(photo.path), [".doc", ".docx"]) -> %>
+                                        <div class="text-center">
+                                          <svg class="h-8 w-8 text-blue-500 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                          </svg>
+                                          <p class="text-xs text-gray-600 dark:text-gray-400 font-medium mt-1">Word</p>
+                                        </div>
+                                      <% String.ends_with?(String.downcase(photo.path), [".xls", ".xlsx"]) -> %>
+                                        <div class="text-center">
+                                          <svg class="h-8 w-8 text-green-500 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"/>
+                                          </svg>
+                                          <p class="text-xs text-gray-600 dark:text-gray-400 font-medium mt-1">Excel</p>
+                                        </div>
+                                      <% true -> %>
+                                        <div class="text-center">
+                                          <svg class="h-8 w-8 text-gray-500 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                          </svg>
+                                          <p class="text-xs text-gray-600 dark:text-gray-400 font-medium mt-1">Archivo</p>
+                                        </div>
+                                    <% end %>
+                                  </div>
+                                <% end %>
+                                
+                                <!-- Overlay with file name -->
+                                <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-200 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100">
+                                  <p class="text-white text-xs font-medium text-center px-1 truncate">
+                                    <%= photo.original_name %>
+                                  </p>
+                                </div>
+                              </div>
+                            <% end %>
+                            
+                            <!-- Show "more" indicator if there are more than 3 files -->
+                            <%= if media_preview.has_more do %>
+                              <div class="aspect-square bg-gray-200 dark:bg-gray-600 rounded-lg flex items-center justify-center">
+                                <div class="text-center">
+                                  <svg class="h-6 w-6 text-gray-500 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                                  </svg>
+                                  <p class="text-xs text-gray-500 font-medium mt-1">+<%= media_preview.total_count - 3 %></p>
+                                </div>
+                              </div>
+                            <% end %>
+                          </div>
+                        </div>
+                      <% end %>
+                    </div>
+                    
+                    <!-- Card Footer -->
+                    <div class="px-6 py-4 bg-gray-50 dark:bg-gray-700 rounded-b-xl">
+                      <button phx-click="view_maintenance_ticket" phx-value-id={ticket.id} class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                        </svg>
+                        Ver Detalles
+                      </button>
+                    </div>
+                  </div>
+                <% end %>
+              </div>
+              
+              <%= if length(@completed_maintenance_tickets) == 0 do %>
+                <div class="text-center py-12">
+                  <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                  </svg>
+                  <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-white">No hay tickets de mantenimiento completados</h3>
+                  <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                    Los tickets de mantenimiento completados aparecerán aquí automáticamente.
+                  </p>
+                </div>
+              <% end %>
+            </div>
+            
+            <!-- Órdenes de Producción Completadas -->
+            <div>
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Órdenes de Producción Completadas</h3>
+              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <%= for order <- @completed_production_orders do %>
+                  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-all duration-200">
+                    <!-- Card Header -->
+                    <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+                      <div class="flex items-start justify-between mb-4">
+                        <div>
+                          <h4 class="text-lg font-semibold text-gray-900 dark:text-white">
+                            <%= order.title %>
+                          </h4>
+                          <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                            <%= order.license_plate %>
+                          </p>
+                        </div>
+                        <span class="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 px-3 py-1 text-xs font-semibold rounded-full">
+                          <%= order.status_label %>
+                        </span>
+                      </div>
+                    </div>
+                    
+                    <!-- Card Body -->
+                    <div class="p-6">
+                      <div class="space-y-3">
+                        <!-- Código del Ticket -->
+                        <div class="flex justify-between items-center">
+                          <span class="text-sm text-gray-500 dark:text-gray-400">Código:</span>
+                          <span class="text-sm font-medium text-gray-900 dark:text-white">
+                            <%= order.ticket_code || "-" %>
+                          </span>
+                        </div>
+                        
+                        <!-- Cliente -->
+                        <div class="flex justify-between items-center">
+                          <span class="text-sm text-gray-500 dark:text-gray-400">Cliente:</span>
+                          <span class="text-sm font-medium text-gray-900 dark:text-white">
+                            <%= order.client_name %>
+                          </span>
+                        </div>
+                        
+                        <!-- Fecha de Creación -->
+                        <div class="flex justify-between items-center">
+                          <span class="text-sm text-gray-500 dark:text-gray-400">Creado:</span>
+                          <span class="text-sm font-medium text-gray-900 dark:text-white">
+                            <%= Calendar.strftime(order.inserted_at, "%d/%m/%Y %H:%M") %>
+                          </span>
+                        </div>
+                        
+                        <!-- Fecha de Completado -->
+                        <div class="flex justify-between items-center">
+                          <span class="text-sm text-gray-500 dark:text-gray-400">Completado:</span>
+                          <span class="text-sm font-medium text-gray-900 dark:text-white">
+                            <%= Calendar.strftime(order.completed_at, "%d/%m/%Y %H:%M") %>
+                          </span>
+                        </div>
+                      </div>
+                      
+                      <!-- Media Preview Section -->
+                      <%= if get_media_preview(order, "production").total_count > 0 do %>
+                        <% media_preview = get_media_preview(order, "production") %>
+                        <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                          <div class="flex items-center justify-between mb-3">
+                            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Archivos adjuntos</span>
+                            <span class="text-xs text-gray-500 dark:text-gray-400">
+                              <%= media_preview.total_count %> archivo<%= if media_preview.total_count != 1, do: "s" %>
+                            </span>
+                          </div>
+                          
+                          <!-- Thumbnail Grid -->
+                          <div class="grid grid-cols-3 gap-2">
+                            <%= for {photo, index} <- Enum.with_index(media_preview.photos) do %>
+                              <div class="relative group">
+                                <%= if String.ends_with?(String.downcase(photo.path), [".jpg", ".jpeg", ".png", ".gif"]) do %>
+                                  <!-- Image Thumbnail -->
+                                  <div class="aspect-square bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
+                                    <img src={photo.path} 
+                                         alt={photo.original_name}
+                                         class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                                         loading="lazy"
+                                         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                    <div class="w-full h-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center" style="display: none;">
+                                      <svg class="h-6 w-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                      </svg>
+                                    </div>
+                                  </div>
+                                <% else %>
+                                  <!-- Document Icon -->
+                                  <div class="aspect-square bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center">
+                                    <%= cond do %>
+                                      <% String.ends_with?(String.downcase(photo.path), ".pdf") -> %>
+                                        <div class="text-center">
+                                          <svg class="h-8 w-8 text-red-500 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                                          </svg>
+                                          <p class="text-xs text-gray-600 dark:text-gray-400 font-medium mt-1">PDF</p>
+                                        </div>
+                                      <% String.ends_with?(String.downcase(photo.path), [".doc", ".docx"]) -> %>
+                                        <div class="text-center">
+                                          <svg class="h-8 w-8 text-blue-500 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                          </svg>
+                                          <p class="text-xs text-gray-600 dark:text-gray-400 font-medium mt-1">Word</p>
+                                        </div>
+                                      <% String.ends_with?(String.downcase(photo.path), [".xls", ".xlsx"]) -> %>
+                                        <div class="text-center">
+                                          <svg class="h-8 w-8 text-green-500 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"/>
+                                          </svg>
+                                          <p class="text-xs text-gray-600 dark:text-gray-400 font-medium mt-1">Excel</p>
+                                        </div>
+                                      <% true -> %>
+                                        <div class="text-center">
+                                          <svg class="h-8 w-8 text-gray-500 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                          </svg>
+                                          <p class="text-xs text-gray-600 dark:text-gray-400 font-medium mt-1">Archivo</p>
+                                        </div>
+                                    <% end %>
+                                  </div>
+                                <% end %>
+                                
+                                <!-- Overlay with file name -->
+                                <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-200 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100">
+                                  <p class="text-white text-xs font-medium text-center px-1 truncate">
+                                    <%= photo.original_name %>
+                                  </p>
+                                </div>
+                              </div>
+                            <% end %>
+                            
+                            <!-- Show "more" indicator if there are more than 3 files -->
+                            <%= if media_preview.has_more do %>
+                              <div class="aspect-square bg-gray-200 dark:bg-gray-600 rounded-lg flex items-center justify-center">
+                                <div class="text-center">
+                                  <svg class="h-6 w-6 text-gray-500 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                                  </svg>
+                                  <p class="text-xs text-gray-500 font-medium mt-1">+<%= media_preview.total_count - 3 %></p>
+                                </div>
+                              </div>
+                            <% end %>
+                          </div>
+                        </div>
+                      <% end %>
+                    </div>
+                    
+                    <!-- Card Footer -->
+                    <div class="px-6 py-4 bg-gray-50 dark:bg-gray-700 rounded-b-xl">
+                      <button phx-click="view_production_order" phx-value-order_id={order.id} class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                        </svg>
+                        Ver Detalles
+                      </button>
+                    </div>
+                  </div>
+                <% end %>
+              </div>
+              
+              <%= if length(@completed_production_orders) == 0 do %>
+                <div class="text-center py-12">
+                  <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                  </svg>
+                  <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-white">No hay órdenes de producción completadas</h3>
+                  <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                    Las órdenes de producción completadas aparecerán aquí automáticamente.
+                  </p>
+                </div>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
       <% end %>
 
       <!-- Modal de Confirmación de Eliminación -->
@@ -1010,7 +1671,7 @@ defmodule EvaaCrmWebGaepell.TicketsLive do
    end
 
    @impl true
-   def handle_event("delete_evaluation", %{"evaluation_id" => evaluation_id}, socket) do
+   def handle_event("delete_evaluation", %{"id" => evaluation_id}, socket) do
      evaluation_id = String.to_integer(evaluation_id)
      evaluation = Repo.get(Evaluation, evaluation_id)
      

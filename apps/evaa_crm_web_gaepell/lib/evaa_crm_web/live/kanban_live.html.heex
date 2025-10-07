@@ -6,86 +6,48 @@
   </div>
 <% end %>
 
-<!-- Tab Selector -->
-<div class="border-b border-gray-200 dark:border-gray-700 mb-6">
-  <ul class="flex flex-wrap -mb-px text-sm font-medium text-center text-gray-500 dark:text-gray-400">
-    <li class="me-2">
-      <a href="#" phx-click="switch_tab" phx-value-tab="dashboard" 
-         class={"inline-flex items-center justify-center p-4 border-b-2 rounded-t-lg hover:text-gray-600 hover:border-gray-300 dark:hover:text-gray-300 group " <>
-           (if @current_tab == "dashboard", do: "text-blue-600 border-blue-600 dark:text-blue-500 dark:border-blue-500", else: "border-transparent")}>
-        <svg class={"w-4 h-4 me-2 " <> (if @current_tab == "dashboard", do: "text-blue-600 dark:text-blue-500", else: "text-gray-400 group-hover:text-gray-500 dark:text-gray-500 dark:group-hover:text-gray-300")} aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
-          <path d="M10 0a10 10 0 1 0 10 10A10.011 10.011 0 0 0 10 0Zm0 5a3 3 0 1 1 0 6 3 3 0 0 1 0-6Zm0 13a8.949 8.949 0 0 1-4.951-1.488A3.987 3.987 0 0 1 9 13h2a3.987 3.987 0 0 1 3.951 3.512A8.949 8.949 0 0 1 10 18Z"/>
-        </svg>Dashboard
-      </a>
-    </li>
-
-  </ul>
-</div>
 
 <!-- Contenido del Tab Dashboard -->
 <%= if @current_tab == "dashboard" do %>
 <div class="space-y-8">
 
+  <!-- Quick Actions - Moved to top -->
+  <div class="border-0 shadow-lg hover:shadow-xl transition-all duration-300 bg-card dark:bg-card rounded-xl">
+    <div class="p-6">
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <button phx-click="show_new_truck_form" class="h-24 flex-col gap-3 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 hover:shadow-lg transition-all duration-300 hover-lift bg-white dark:bg-slate-800/50 rounded-xl flex items-center justify-center">
+          <svg class="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+          </svg>
+          <span class="font-medium text-slate-700 dark:text-slate-300">Registrar Camión</span>
+        </button>
+        <a href="/checkin-wizard?scenario=evaluation_quotation&step=2" class="h-24 flex-col gap-3 gradient-primary text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover-lift rounded-xl flex items-center justify-center">
+          <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+          </svg>
+          <span class="font-medium">Nueva Evaluación</span>
+        </a>
+        <a href="/checkin-wizard?scenario=maintenance_checkin&step=2" class="h-24 flex-col gap-3 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 hover:shadow-lg transition-all duration-300 hover-lift bg-white dark:bg-slate-800/50 rounded-xl flex items-center justify-center">
+          <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+          <span class="font-medium text-slate-700 dark:text-slate-300">Nuevo Mantenimiento</span>
+        </a>
+        <a href="/checkin-wizard?scenario=production_order&step=2" class="h-24 flex-col gap-3 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-xl flex items-center justify-center transition-colors">
+          <svg class="h-6 w-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+          </svg>
+          <span class="font-medium text-slate-700 dark:text-slate-300">Nueva Orden</span>
+        </a>
+        </div>
+        </div>
+    </div>
 
       <!-- Stats Cards Modernos -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-    <!-- Camiones Activos -->
-    <div class="relative overflow-hidden hover-lift border-0 shadow-lg hover:shadow-xl transition-all duration-300 bg-card rounded-xl">
-      <div class="absolute inset-0 bg-gradient-to-br from-primary to-accent opacity-10"></div>
-      <div class="flex flex-row items-center justify-between space-y-0 pb-3 relative z-10 p-6">
-        <div>
-          <div class="text-sm font-medium text-muted-foreground">Camiones Activos</div>
-          <div class="text-3xl font-bold text-card-foreground mt-2">
-            <%= @dashboard_stats.total_trucks %>
-          </div>
-        </div>
-        <div class="h-12 w-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg">
-          <svg class="h-6 w-6 text-primary-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                      </svg> 
-          </div>
-      </div>
-      <div class="relative z-10 px-6 pb-6">
-        <p class="text-xs text-muted-foreground mb-2">En operación</p>
-        <div class="flex items-center gap-1 text-xs">
-          <svg class="h-3 w-3 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
-          </svg>
-          <span class="font-medium text-success">+2 este mes</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Tickets -->
-    <div class="relative overflow-hidden hover-lift border-0 shadow-lg hover:shadow-xl transition-all duration-300 bg-card dark:bg-card rounded-xl">
-      <div class="absolute inset-0 gradient-warning opacity-10"></div>
-      <div class="flex flex-row items-center justify-between space-y-0 pb-3 relative z-10 p-6">
-        <div>
-          <div class="text-sm font-medium text-slate-600 dark:text-slate-400">Tickets</div>
-          <div class="text-3xl font-bold text-slate-900 dark:text-slate-100 mt-2">
-            <%= @dashboard_stats.pending_tickets %>
-          </div>
-        </div>
-        <div class="h-12 w-12 rounded-xl gradient-warning flex items-center justify-center shadow-lg">
-          <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-          </svg>
-        </div>
-      </div>
-      <div class="relative z-10 px-6 pb-6">
-        <p class="text-xs text-slate-500 dark:text-slate-400 mb-2">Mantenimiento + Producción</p>
-        <div class="flex items-center gap-1 text-xs">
-          <svg class="h-3 w-3 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"></path>
-          </svg>
-          <span class="font-medium text-red-600">Activos</span>
-        </div>
-      </div>
-    </div>
-
     <!-- Evaluaciones -->
-    <div class="relative overflow-hidden hover-lift border-0 shadow-lg hover:shadow-xl transition-all duration-300 bg-card dark:bg-card rounded-xl">
+    <div class="relative overflow-hidden hover-lift border-0 shadow-lg hover:shadow-xl transition-all duration-300 bg-card dark:bg-card rounded-xl cursor-pointer" phx-click="show_evaluations_modal">
       <div class="absolute inset-0 gradient-success opacity-10"></div>
       <div class="flex flex-row items-center justify-between space-y-0 pb-3 relative z-10 p-6">
         <div>
@@ -111,8 +73,63 @@
       </div>
     </div>
 
+    <!-- Mantenimiento -->
+    <div class="relative overflow-hidden hover-lift border-0 shadow-lg hover:shadow-xl transition-all duration-300 bg-card dark:bg-card rounded-xl cursor-pointer" phx-click="show_maintenance_modal">
+      <div class="absolute inset-0 gradient-warning opacity-10"></div>
+      <div class="flex flex-row items-center justify-between space-y-0 pb-3 relative z-10 p-6">
+        <div>
+          <div class="text-sm font-medium text-slate-600 dark:text-slate-400">Mantenimiento</div>
+          <div class="text-3xl font-bold text-slate-900 dark:text-slate-100 mt-2">
+            <%= @dashboard_stats.pending_tickets %>
+          </div>
+        </div>
+        <div class="h-12 w-12 rounded-xl gradient-warning flex items-center justify-center shadow-lg">
+          <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+          </svg>
+        </div>
+      </div>
+      <div class="relative z-10 px-6 pb-6">
+        <p class="text-xs text-slate-500 dark:text-slate-400 mb-2">Tickets activos</p>
+        <div class="flex items-center gap-1 text-xs">
+          <svg class="h-3 w-3 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"></path>
+          </svg>
+          <span class="font-medium text-red-600">Pendientes</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Producción -->
+    <div class="relative overflow-hidden hover-lift border-0 shadow-lg hover:shadow-xl transition-all duration-300 bg-card dark:bg-card rounded-xl cursor-pointer" phx-click="show_production_modal">
+      <div class="absolute inset-0 bg-gradient-to-br from-purple-500 to-indigo-600 opacity-10"></div>
+      <div class="flex flex-row items-center justify-between space-y-0 pb-3 relative z-10 p-6">
+        <div>
+          <div class="text-sm font-medium text-slate-600 dark:text-slate-400">Producción</div>
+          <div class="text-3xl font-bold text-slate-900 dark:text-slate-100 mt-2">
+            <%= @dashboard_stats.pending_tickets %>
+          </div>
+        </div>
+        <div class="h-12 w-12 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center shadow-lg">
+          <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path>
+          </svg>
+        </div>
+      </div>
+      <div class="relative z-10 px-6 pb-6">
+        <p class="text-xs text-slate-500 dark:text-slate-400 mb-2">Órdenes activas</p>
+        <div class="flex items-center gap-1 text-xs">
+          <svg class="h-3 w-3 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+          </svg>
+          <span class="font-medium text-purple-600">En proceso</span>
+        </div>
+      </div>
+    </div>
+
     <!-- Completados -->
-    <div class="relative overflow-hidden hover-lift border-0 shadow-lg hover:shadow-xl transition-all duration-300 bg-card dark:bg-card rounded-xl">
+    <div class="relative overflow-hidden hover-lift border-0 shadow-lg hover:shadow-xl transition-all duration-300 bg-card dark:bg-card rounded-xl cursor-pointer" phx-click="show_completed_modal">
       <div class="absolute inset-0 gradient-danger opacity-10"></div>
       <div class="flex flex-row items-center justify-between space-y-0 pb-3 relative z-10 p-6">
         <div>
@@ -139,131 +156,60 @@
     </div>
   </div>
 
-  <!-- Main Content Grid -->
-  <div class="grid grid-cols-1 xl:grid-cols-3 gap-8">
-    <!-- Recent Trucks -->
-    <div class="xl:col-span-2 border-0 shadow-lg hover:shadow-xl transition-all duration-300 bg-card dark:bg-card rounded-xl">
-      <div class="bg-gradient-to-r from-slate-50 to-blue-50 dark:from-slate-800/50 dark:to-blue-900/20 rounded-t-xl p-6">
-        <div class="flex items-center justify-between">
-      <div>
-            <div class="text-lg text-slate-900 dark:text-slate-100 font-semibold">Camiones Recientes</div>
-            <div class="text-slate-600 dark:text-slate-400">Actividad reciente de la flota</div>
-          </div>
-          <a href="/trucks" class="gradient-primary text-white border-0 shadow-lg hover:shadow-xl transition-all duration-200 px-4 py-2 rounded-lg font-medium">
-            Ver todos
-          </a>
-        </div>
-      </div>
-      <div class="p-6">
-        <div class="space-y-4">
-          <%= for truck <- @dashboard_stats.recent_trucks do %>
-            <div class="flex items-center space-x-4 p-4 border border-slate-200/60 dark:border-slate-700/60 rounded-xl hover:shadow-md transition-all duration-200 hover-lift bg-white dark:bg-slate-800/50">
-              <div class="h-16 w-16 rounded-xl bg-slate-100 dark:bg-slate-700 flex items-center justify-center border-2 border-white dark:border-slate-700 shadow-md">
-                <svg class="h-8 w-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                </svg>
-              </div>
-              <div class="flex-1">
-                <div class="flex items-center gap-3 mb-1">
-                  <h4 class="font-semibold text-slate-900 dark:text-slate-100"><%= truck.license_plate %></h4>
-                  <span class="gradient-success text-white border-0 px-2 py-1 rounded-full text-xs">
-                    Activo
-                  </span>
-                </div>
-                <p class="text-sm text-slate-600 dark:text-slate-400 font-medium"><%= truck.brand %> <%= truck.model %></p>
-                <div class="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400 mt-1">
-                  <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                  </svg>
-                  <span>Último mantenimiento: <%= Calendar.strftime(truck.last_maintenance || DateTime.utc_now(), "%d/%m/%Y") %></span>
-                </div>
-              </div>
-              <a href={"/trucks/#{truck.id}"} class="border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors p-2 rounded-lg">
-                <svg class="h-4 w-4 text-slate-600 dark:text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-                </svg>
-              </a>
-            </div>
-          <% end %>
-        </div>
-      </div>
-    </div>
-
-    <!-- Recent Tickets -->
-    <div class="border-0 shadow-lg hover:shadow-xl transition-all duration-300 bg-card dark:bg-card rounded-xl">
-      <div class="bg-gradient-to-r from-slate-50 to-purple-50 dark:from-slate-800/50 dark:to-purple-900/20 rounded-t-xl p-6">
-        <div class="flex items-center justify-between">
-      <div>
-            <div class="text-lg text-slate-900 dark:text-slate-100 font-semibold">Tickets Recientes</div>
-            <div class="text-slate-600 dark:text-slate-400">Últimos reportes</div>
-          </div>
-          <a href="/checkin-wizard" class="gradient-primary text-white border-0 shadow-md hover:shadow-lg transition-all duration-200 px-3 py-2 rounded-lg">
-            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-            </svg>
-          </a>
-        </div>
-      </div>
-      <div class="p-6">
-        <div class="space-y-4">
-          <%= for ticket <- @dashboard_stats.recent_tickets do %>
-            <div class="space-y-3 p-4 border border-slate-200/60 dark:border-slate-700/60 rounded-xl hover:shadow-md transition-all duration-200 hover-lift bg-white dark:bg-slate-800/50">
-              <div class="flex items-center justify-between">
-                <span class="font-semibold text-slate-900 dark:text-slate-100 text-sm"><%= ticket.id %></span>
-                <span class="bg-yellow-100 dark:bg-yellow-900/50 text-yellow-700 dark:text-yellow-300 border-yellow-200 dark:border-yellow-800 px-2 py-1 rounded-full text-xs">
-                  Pendiente
-                </span>
-              </div>
-              <p class="text-sm font-medium text-slate-800 dark:text-slate-200"><%= ticket.title %></p>
-              <div class="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-                <span>Camión: <span class="font-medium text-slate-700 dark:text-slate-300"><%= ticket.truck_license_plate %></span></span>
-                <span><%= Calendar.strftime(ticket.inserted_at, "%d/%m/%Y") %></span>
-              </div>
-    </div>
-          <% end %>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Quick Actions -->
+  <!-- Recent Trucks - Full Width -->
   <div class="border-0 shadow-lg hover:shadow-xl transition-all duration-300 bg-card dark:bg-card rounded-xl">
-    <div class="bg-gradient-to-r from-slate-50 to-green-50 dark:from-slate-800/50 dark:to-green-900/20 rounded-t-xl p-6">
-      <div class="text-lg text-slate-900 dark:text-slate-100 font-semibold">Acciones Rápidas</div>
-      <div class="text-slate-600 dark:text-slate-400">Herramientas principales para gestión diaria</div>
+    <div class="bg-gradient-to-r from-slate-50 to-blue-50 dark:from-slate-800/50 dark:to-blue-900/20 rounded-t-xl p-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <div class="text-lg text-slate-900 dark:text-slate-100 font-semibold">Camiones Recientes</div>
+          <div class="text-slate-600 dark:text-slate-400">Actividad reciente de la flota</div>
+        </div>
+        <a href="/trucks" class="gradient-primary text-white border-0 shadow-lg hover:shadow-xl transition-all duration-200 px-4 py-2 rounded-lg font-medium">
+          Ver todos
+        </a>
+      </div>
     </div>
     <div class="p-6">
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <a href="/checkin-wizard" class="h-24 flex-col gap-3 gradient-primary text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover-lift rounded-xl flex items-center justify-center">
-          <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-          </svg>
-          <span class="font-medium">Nueva Evaluación</span>
-        </a>
-        <a href="/trucks" class="h-24 flex-col gap-3 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 hover:shadow-lg transition-all duration-300 hover-lift bg-white dark:bg-slate-800/50 rounded-xl flex items-center justify-center">
-          <svg class="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-          </svg>
-          <span class="font-medium text-slate-700 dark:text-slate-300">Registrar Camión</span>
-        </a>
-        <a href="/checkin-wizard" class="h-24 flex-col gap-3 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 hover:shadow-lg transition-all duration-300 hover-lift bg-white dark:bg-slate-800/50 rounded-xl flex items-center justify-center">
-          <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-          </svg>
-          <span class="font-medium text-slate-700 dark:text-slate-300">Nuevo Mantenimiento</span>
-        </a>
-        <a href="/production-orders/new" class="h-24 flex-col gap-3 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-xl flex items-center justify-center transition-colors">
-          <svg class="h-6 w-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-          </svg>
-          <span class="font-medium text-slate-700 dark:text-slate-300">Nueva Orden</span>
-        </a>
-        </div>
-        </div>
+      <div class="space-y-4">
+        <%= for truck <- @dashboard_stats.recent_trucks do %>
+          <div class="flex items-center space-x-4 p-4 border border-slate-200/60 dark:border-slate-700/60 rounded-xl hover:shadow-md transition-all duration-200 hover-lift bg-white dark:bg-slate-800/50">
+            <div class="h-16 w-16 rounded-xl bg-slate-100 dark:bg-slate-700 flex items-center justify-center border-2 border-white dark:border-slate-700 shadow-md">
+              <svg class="h-8 w-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+              </svg>
+            </div>
+            <div class="flex-1">
+              <h4 class="font-semibold text-slate-900 dark:text-slate-100 mb-2"><%= truck.brand %> <%= truck.model %></h4>
+              <div class="flex gap-2 mb-2">
+                <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                  Placa: <%= truck.license_plate %>
+                </span>
+                <%= if truck.ficha do %>
+                  <span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
+                    Ficha: <%= truck.ficha %>
+                  </span>
+                <% end %>
+              </div>
+              <div class="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
+                <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                </svg>
+                <span>Último mantenimiento: <%= Calendar.strftime(truck.last_maintenance || DateTime.utc_now(), "%d/%m/%Y") %></span>
+              </div>
+            </div>
+            <a href={"/trucks/#{truck.id}"} class="border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors p-2 rounded-lg">
+              <svg class="h-4 w-4 text-slate-600 dark:text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+              </svg>
+            </a>
+          </div>
+        <% end %>
+      </div>
     </div>
   </div>
+</div>
+
 <% end %>
 
 <%= if @show_modal && (!@modal_item && !@modal_type) do %>
@@ -302,7 +248,7 @@
           <div>
             <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Camión</label>
             <div class="mt-1 text-sm text-gray-800 dark:text-gray-100 font-semibold">
-              <%= @ticket_details.truck && @ticket_details.truck.brand %> <%= @ticket_details.truck && @ticket_details.truck.model %> (<%= @ticket_details.truck && @ticket_details.truck.license_plate %>)
+              <%= @ticket_details.truck && @ticket_details.truck.brand %> <%= @ticket_details.truck && @ticket_details.truck.model %>
             </div>
           </div>
           <div>
@@ -454,7 +400,7 @@
           <div>
             <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Camión</label>
             <div class="mt-1 text-sm text-gray-800 dark:text-gray-100 font-semibold">
-              <%= [@production_details.truck_brand, @production_details.truck_model, "(" <> (@production_details.license_plate || "-") <> ")"] |> Enum.reject(&is_nil/1) |> Enum.join(" ") %>
+              <%= [@production_details.truck_brand, @production_details.truck_model] |> Enum.reject(&is_nil/1) |> Enum.join(" ") %>
             </div>
           </div>
           <div>
@@ -617,5 +563,309 @@
   ticket_logs={@ticket_logs}
   ticket_checkouts={@ticket_checkouts}
 />
+
+<!-- Truck Form Modal -->
+<%= if @show_truck_form do %>
+  <div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white dark:bg-gray-800">
+      <div class="mt-3">
+        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">
+          Nuevo Camión
+        </h3>
+        <form phx-submit="save_truck">
+          <div class="space-y-4">
+            <div class="relative">
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Marca</label>
+              <input type="text" name="truck[brand]" id="brand-input" required
+                     class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                     phx-keyup="filter_brands" phx-debounce="300" autocomplete="off">
+              <div id="brand-suggestions" class="absolute z-10 w-full mt-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg max-h-60 overflow-y-auto hidden">
+              </div>
+            </div>
+            <div class="relative">
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Modelo</label>
+              <input type="text" name="truck[model]" id="model-input" required
+                     class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                     phx-keyup="filter_models" phx-debounce="300" autocomplete="off">
+              <div id="model-suggestions" class="absolute z-10 w-full mt-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg max-h-60 overflow-y-auto hidden">
+              </div>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Placa</label>
+              <input type="text" name="truck[license_plate]" required
+                     class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Año</label>
+              <input type="number" name="truck[year]" min="1900" max="2030" required
+                     class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Color</label>
+              <input type="text" name="truck[color]"
+                     class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Propietario</label>
+              <input type="text" name="truck[owner]" id="owner-input"
+                     class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                     phx-keyup="filter_owners" phx-debounce="300" autocomplete="off">
+              <div id="owner-suggestions" class="absolute z-10 w-full mt-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg max-h-60 overflow-y-auto hidden">
+              </div>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Ficha</label>
+              <input type="text" name="truck[ficha]"
+                     class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white">
+            </div>
+          </div>
+          <div class="mt-6 flex justify-end space-x-3">
+            <button type="button" phx-click="hide_truck_form" 
+                    class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500">
+              Cancelar
+            </button>
+            <button type="submit" 
+                    class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+              Guardar
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+<% end %>
+
+<!-- Modal de Evaluaciones -->
+<%= if @show_evaluations_modal do %>
+  <div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white dark:bg-gray-800">
+      <div class="mt-3">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-lg font-medium text-gray-900 dark:text-white">
+            Últimas Evaluaciones
+          </h3>
+          <button phx-click="close_evaluations_modal" class="text-gray-400 hover:text-gray-600">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+          </button>
+        </div>
+        <div class="space-y-3">
+          <%= if length(@evaluations_tickets) > 0 do %>
+            <%= for evaluation <- @evaluations_tickets do %>
+              <div class="border border-gray-200 dark:border-gray-600 rounded-lg p-3 hover:bg-gray-50 dark:hover:bg-gray-700">
+                <div class="flex justify-between items-start">
+                  <div class="flex-1">
+                    <h4 class="text-sm font-medium text-gray-900 dark:text-white">
+                      <%= if evaluation.truck do %>
+                        <%= evaluation.truck.brand %> <%= evaluation.truck.model %>
+                      <% else %>
+                        Sin camión asignado
+                      <% end %>
+                    </h4>
+                    <%= if evaluation.truck do %>
+                      <div class="flex gap-2 mt-1">
+                        <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                          Placa: <%= evaluation.truck.license_plate %>
+                        </span>
+                        <%= if evaluation.truck.ficha do %>
+                          <span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
+                            Ficha: <%= evaluation.truck.ficha %>
+                          </span>
+                        <% end %>
+                      </div>
+                    <% end %>
+                    <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                      <%= Calendar.strftime(evaluation.inserted_at, "%d/%m/%Y %H:%M") %>
+                    </p>
+                  </div>
+                  <a href={"/tickets/#{evaluation.id}"} 
+                     class="ml-2 px-2 py-1 bg-green-100 text-green-800 text-xs rounded hover:bg-green-200 transition-colors">
+                    Ver
+                  </a>
+                </div>
+              </div>
+            <% end %>
+          <% else %>
+            <p class="text-gray-500 dark:text-gray-400 text-center py-4">No hay evaluaciones recientes</p>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+<% end %>
+
+<!-- Modal de Mantenimiento -->
+<%= if @show_maintenance_modal do %>
+  <div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white dark:bg-gray-800">
+      <div class="mt-3">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-lg font-medium text-gray-900 dark:text-white">
+            Últimos Tickets de Mantenimiento
+          </h3>
+          <button phx-click="close_maintenance_modal" class="text-gray-400 hover:text-gray-600">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+          </button>
+        </div>
+        <div class="space-y-3">
+          <%= if length(@maintenance_tickets) > 0 do %>
+            <%= for ticket <- @maintenance_tickets do %>
+              <div class="border border-gray-200 dark:border-gray-600 rounded-lg p-3 hover:bg-gray-50 dark:hover:bg-gray-700">
+                <div class="flex justify-between items-start">
+                  <div class="flex-1">
+                    <h4 class="text-sm font-medium text-gray-900 dark:text-white">
+                      <%= if ticket.truck do %>
+                        <%= ticket.truck.brand %> <%= ticket.truck.model %>
+                      <% else %>
+                        Sin camión asignado
+                      <% end %>
+                    </h4>
+                    <%= if ticket.truck do %>
+                      <div class="flex gap-2 mt-1">
+                        <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                          Placa: <%= ticket.truck.license_plate %>
+                        </span>
+                        <%= if ticket.truck.ficha do %>
+                          <span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
+                            Ficha: <%= ticket.truck.ficha %>
+                          </span>
+                        <% end %>
+                      </div>
+                    <% end %>
+                    <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                      <%= Calendar.strftime(ticket.inserted_at, "%d/%m/%Y %H:%M") %>
+                    </p>
+                  </div>
+                  <a href={"/tickets/#{ticket.id}"} 
+                     class="ml-2 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded hover:bg-blue-200 transition-colors">
+                    Ver
+                  </a>
+                </div>
+              </div>
+            <% end %>
+          <% else %>
+            <p class="text-gray-500 dark:text-gray-400 text-center py-4">No hay tickets de mantenimiento recientes</p>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+<% end %>
+
+<!-- Modal de Producción -->
+<%= if @show_production_modal do %>
+  <div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white dark:bg-gray-800">
+      <div class="mt-3">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-lg font-medium text-gray-900 dark:text-white">
+            Últimas Órdenes de Producción
+          </h3>
+          <button phx-click="close_production_modal" class="text-gray-400 hover:text-gray-600">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+          </button>
+        </div>
+        <div class="space-y-3">
+          <%= if length(@production_tickets) > 0 do %>
+            <%= for order <- @production_tickets do %>
+              <div class="border border-gray-200 dark:border-gray-600 rounded-lg p-3 hover:bg-gray-50 dark:hover:bg-gray-700">
+                <div class="flex justify-between items-start">
+                  <div class="flex-1">
+                    <h4 class="text-sm font-medium text-gray-900 dark:text-white">
+                      <%= order.truck_brand %> <%= order.truck_model %>
+                    </h4>
+                    <div class="flex gap-2 mt-1">
+                      <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                        Placa: <%= order.license_plate %>
+                      </span>
+                    </div>
+                    <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                      <%= Calendar.strftime(order.inserted_at, "%d/%m/%Y %H:%M") %>
+                    </p>
+                  </div>
+                  <a href={"/production-orders/#{order.id}"} 
+                     class="ml-2 px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded hover:bg-purple-200 transition-colors">
+                    Ver
+                  </a>
+                </div>
+              </div>
+            <% end %>
+          <% else %>
+            <p class="text-gray-500 dark:text-gray-400 text-center py-4">No hay órdenes de producción recientes</p>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+<% end %>
+
+<!-- Modal de Completados -->
+<%= if @show_completed_modal do %>
+  <div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white dark:bg-gray-800">
+      <div class="mt-3">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-lg font-medium text-gray-900 dark:text-white">
+            Últimos Completados
+          </h3>
+          <button phx-click="close_completed_modal" class="text-gray-400 hover:text-gray-600">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+          </button>
+        </div>
+        <div class="space-y-3">
+          <%= if length(@completed_tickets) > 0 do %>
+            <%= for item <- @completed_tickets do %>
+              <div class="border border-gray-200 dark:border-gray-600 rounded-lg p-3 hover:bg-gray-50 dark:hover:bg-gray-700">
+                <div class="flex justify-between items-start">
+                  <div class="flex-1">
+                    <h4 class="text-sm font-medium text-gray-900 dark:text-white">
+                      <%= if Map.has_key?(item, :truck) and item.truck do %>
+                        <%= item.truck.brand %> <%= item.truck.model %>
+                      <% else %>
+                        <%= item.truck_brand %> <%= item.truck_model %>
+                      <% end %>
+                    </h4>
+                    <div class="flex gap-2 mt-1">
+                      <%= if Map.has_key?(item, :truck) and item.truck do %>
+                        <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                          Placa: <%= item.truck.license_plate %>
+                        </span>
+                        <%= if item.truck.ficha do %>
+                          <span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
+                            Ficha: <%= item.truck.ficha %>
+                          </span>
+                        <% end %>
+                      <% else %>
+                        <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                          Placa: <%= item.license_plate %>
+                        </span>
+                      <% end %>
+                    </div>
+                    <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                      <%= Calendar.strftime(item.updated_at, "%d/%m/%Y %H:%M") %>
+                    </p>
+                  </div>
+                  <a href={if Map.has_key?(item, :title), do: "/tickets/#{item.id}", else: "/production-orders/#{item.id}"} 
+                     class="ml-2 px-2 py-1 bg-green-100 text-green-800 text-xs rounded hover:bg-green-200 transition-colors">
+                    Ver
+                  </a>
+                </div>
+              </div>
+            <% end %>
+          <% else %>
+            <p class="text-gray-500 dark:text-gray-400 text-center py-4">No hay elementos completados recientes</p>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+<% end %>
 
  

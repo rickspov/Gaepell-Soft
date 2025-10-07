@@ -18,10 +18,10 @@ defmodule EvaaCrmGaepell.Truck do
     field :general_notes, :string
     field :profile_photo, :string
     field :kilometraje, :integer, default: 0
-    field :rear_tire_width, :integer
-    field :useful_length, :integer
-    field :chassis_length, :integer
-    field :chassis_width, :integer
+    field :rear_tire_width, :float
+    field :useful_length, :float
+    field :chassis_length, :float
+    field :chassis_width, :float
 
     belongs_to :business, EvaaCrmGaepell.Business
     has_many :maintenance_tickets, EvaaCrmGaepell.MaintenanceTicket
@@ -41,10 +41,10 @@ defmodule EvaaCrmGaepell.Truck do
     |> validate_inclusion(:fuel_type, ["diesel", "gasoline", "electric", "hybrid"])
 
     |> validate_number(:kilometraje, greater_than_or_equal_to: 0)
-    |> validate_number(:rear_tire_width, greater_than: 0)
-    |> validate_number(:useful_length, greater_than: 0)
-    |> validate_number(:chassis_length, greater_than: 0)
-    |> validate_number(:chassis_width, greater_than: 0)
+    |> validate_number(:rear_tire_width, greater_than: 0.0)
+    |> validate_number(:useful_length, greater_than: 0.0)
+    |> validate_number(:chassis_length, greater_than: 0.0)
+    |> validate_number(:chassis_width, greater_than: 0.0)
     |> foreign_key_constraint(:business_id)
   end
 

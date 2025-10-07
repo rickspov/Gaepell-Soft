@@ -19,6 +19,8 @@ defmodule EvaaCrmGaepell.ProductionOrder do
     field :customer_signature, :string
     field :photos, {:array, :string}
     field :progress, :integer, default: 0
+    field :ticket_code, :string
+    field :exit_date, :utc_datetime
 
     # Campos de check-out (temporalmente comentados hasta que se resuelva el problema de migración)
     # field :checkout_driver_cedula, :string
@@ -45,7 +47,7 @@ defmodule EvaaCrmGaepell.ProductionOrder do
     |> cast(attrs, [:client_name, :truck_brand, :truck_model, :license_plate, :box_type, 
                     :specifications, :estimated_delivery, :status, :notes, :actual_delivery_date,
                     :total_cost, :materials_used, :quality_check_notes, :customer_signature, :photos,
-                    :progress, :business_id, :specialist_id, :workflow_id, :workflow_state_id, :contact_id])
+                    :progress, :business_id, :specialist_id, :workflow_id, :workflow_state_id, :contact_id, :ticket_code, :exit_date])
     |> validate_required([:client_name, :truck_brand, :truck_model, :license_plate, :box_type, 
                          :estimated_delivery, :business_id])
     |> validate_inclusion(:box_type, ["refrigerada", "seca"])
@@ -99,8 +101,15 @@ defmodule EvaaCrmGaepell.ProductionOrder do
   Crea una nueva orden de producción
   """
   def create_production_order(attrs) do
+    # Generar código de ticket si no se proporciona uno
+    attrs_with_code = if Map.has_key?(attrs, "ticket_code") and not is_nil(attrs["ticket_code"]) do
+      attrs
+    else
+      Map.put(attrs, "ticket_code", EvaaCrmGaepell.TicketCodeGenerator.generate_ticket_code(:production))
+    end
+
     case %__MODULE__{}
-         |> changeset(attrs)
+         |> changeset(attrs_with_code)
          |> EvaaCrmGaepell.Repo.insert() do
       {:ok, order} ->
         {:ok, order}
