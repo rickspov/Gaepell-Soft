@@ -43,5 +43,10 @@ if System.get_env("PHX_SERVER") do
   config :evaa_crm_gaepell, EvaaCrmGaepell.Repo,
     url: database_url,
     pool_size: pool_size,
-    ssl: true
+    ssl: true,
+    timeout: 15_000,
+    connect_timeout: 10_000,
+    queue_target: 5_000,
+    queue_interval: 1_000,
+    migration_lock: nil
 end
