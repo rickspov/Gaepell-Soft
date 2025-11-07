@@ -21,6 +21,9 @@ defmodule EvaaCrmWebGaepell.Router do
   scope "/", EvaaCrmWebGaepell do
     pipe_through :browser
 
+    # Health check endpoint (no authentication required)
+    get "/health", HealthController, :check
+    
     get "/login", SessionController, :new
     post "/login", SessionController, :create
     delete "/logout", SessionController, :delete
