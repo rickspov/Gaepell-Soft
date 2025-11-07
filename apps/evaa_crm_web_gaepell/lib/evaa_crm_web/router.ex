@@ -18,12 +18,15 @@ defmodule EvaaCrmWebGaepell.Router do
     plug :accepts, ["json"]
   end
 
+  # Health check endpoint - minimal pipeline, no auth, no CSRF
+  scope "/", EvaaCrmWebGaepell do
+    # Health check with minimal pipeline
+    get "/health", HealthController, :check
+  end
+
   scope "/", EvaaCrmWebGaepell do
     pipe_through :browser
 
-    # Health check endpoint (no authentication required)
-    get "/health", HealthController, :check
-    
     get "/login", SessionController, :new
     post "/login", SessionController, :create
     delete "/logout", SessionController, :delete
