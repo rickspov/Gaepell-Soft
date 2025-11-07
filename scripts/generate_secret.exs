@@ -7,3 +7,5 @@ IO.puts("")
 IO.puts("SECRET_KEY_BASE=#{secret}")
 IO.puts("")
 IO.puts("📋 Copia esta línea y configúrala en Railway como variable de entorno")
+
+

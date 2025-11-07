@@ -129,3 +129,48 @@ Thumbs.db
 
 # Railway specific
 .railway/
+
+# Backup files
+*.sql
+*.zip
+*.backup
+*-backup.sql
+*-backup_*.sql
+eva-crm-*.zip
+evaa-crm-*.zip
+
+# Test and debug scripts
+test_*.exs
+debug_*.exs
+check_*.exs
+verify_*.exs
+fix_*.exs
+create_*.exs
+cleanup_*.exs
+inspect_*.exs
+migrate_*.exs
+add_*.exs
+final_*.exs
+
+# Migration packages (compiled files)
+migration_package/
+
+# Environment config files
+*.env
+eva-crm-config.env
+
+# Sample data (PDFs)
+sample_data/*.pdf
+
+# Build artifacts
+_build/
+deps/
+*.beam
+
+# Compiled releases
+*.ez
+*.tar
+
+# Logs
+*.log
+logs/

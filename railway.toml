@@ -2,12 +2,17 @@
 builder = "nixpacks"
 
 [deploy]
-startCommand = "mix phx.server"
+startCommand = "mix ecto.migrate && mix phx.server"
 healthcheckPath = "/"
-healthcheckTimeout = 100
+healthcheckTimeout = 300
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 10
 
+# Variables de entorno que se configuran en Railway Dashboard
+# Estas son solo valores por defecto, se deben configurar en Railway
 [env]
 PHX_SERVER = "true"
 POOL_SIZE = "10"
+MIX_ENV = "prod"
+
+

@@ -43,3 +43,5 @@ Write-Host "5. Choose 'rickspov/gp-crm'" -ForegroundColor White
 Write-Host "6. Add PostgreSQL database" -ForegroundColor White
 Write-Host "7. Configure environment variables" -ForegroundColor White
 Write-Host "8. Deploy!" -ForegroundColor White
+
+

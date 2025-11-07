@@ -26,3 +26,5 @@ if [ -z "$SECRET_KEY_BASE" ]; then
 fi
 
 echo "✅ Deployment completed successfully!"
+
+

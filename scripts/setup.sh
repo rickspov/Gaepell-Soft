@@ -43,3 +43,5 @@ echo "5. Choose 'rickspov/gp-crm'"
 echo "6. Add PostgreSQL database"
 echo "7. Configure environment variables"
 echo "8. Deploy!"
+
+
