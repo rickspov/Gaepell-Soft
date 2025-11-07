@@ -29,24 +29,39 @@ if System.get_env("PHX_SERVER") do
     ],
     secret_key_base: secret_key_base
 
-  database_url = System.get_env("DATABASE_URL")
+  # Railway puede usar DATABASE_URL o DATABASE_PUBLIC_URL
+  # DATABASE_URL usa conexión privada (puerto 5432)
+  # DATABASE_PUBLIC_URL usa TCP proxy (puerto dinámico)
+  database_url = System.get_env("DATABASE_URL") || System.get_env("DATABASE_PUBLIC_URL")
 
   if is_nil(database_url) do
     raise """
     environment variable DATABASE_URL is missing.
-    For example: ecto://USER:PASS@HOST/DATABASE
+    Railway should provide this automatically when PostgreSQL is connected.
+    For example: postgresql://USER:PASS@HOST:PORT/DATABASE
     """
   end
+
+  # Normalizar la URL: Railway puede usar postgresql:// o postgres://
+  # Ecto acepta ambos, pero normalizamos para consistencia
+  normalized_url = 
+    database_url
+    |> String.replace(~r/^postgres:\/\//, "postgresql://")
+    |> String.replace(~r/^ecto:\/\//, "postgresql://")
 
   pool_size = String.to_integer(System.get_env("POOL_SIZE") || "10")
 
   config :evaa_crm_gaepell, EvaaCrmGaepell.Repo,
-    url: database_url,
+    url: normalized_url,
     pool_size: pool_size,
+    # Railway maneja SSL internamente, pero lo habilitamos por seguridad
     ssl: true,
+    # Timeouts más largos para conexiones iniciales
     timeout: 15_000,
     connect_timeout: 10_000,
+    # Configuración de queue para evitar errores de pool
     queue_target: 5_000,
     queue_interval: 1_000,
+    # Deshabilitar migration lock para Railway
     migration_lock: nil
 end
