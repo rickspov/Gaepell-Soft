@@ -41,43 +41,26 @@ else
 fi
 
 echo ""
-echo "🎨 Building and digesting assets..."
-# In umbrella projects, we need to compile assets for the specific app
-# First, ensure we're in the root directory
-cd "$(dirname "$0")/.." || exit 1
-
-# Compile Tailwind CSS (minified for production)
-echo "  Compiling Tailwind CSS..."
-if mix tailwind evaa_crm_web_gaepell --minify; then
-  echo "  ✅ Tailwind compiled"
+echo "🎨 Verifying assets are compiled..."
+# Assets should be compiled during build, but verify they exist
+if [ ! -f "apps/evaa_crm_web_gaepell/priv/static/assets/app.css" ] || [ ! -f "apps/evaa_crm_web_gaepell/priv/static/assets/app.js" ]; then
+  echo "⚠️  WARNING: Assets not found, attempting to compile..."
+  # Fallback: compile assets if they weren't built during build phase
+  if mix tailwind evaa_crm_web_gaepell --minify && mix esbuild evaa_crm_web_gaepell --minify; then
+    echo "  ✅ Assets compiled as fallback"
+    # Copy additional JS files
+    if [ -f "apps/evaa_crm_web_gaepell/assets/js/pwa.js" ]; then
+      cp apps/evaa_crm_web_gaepell/assets/js/pwa.js apps/evaa_crm_web_gaepell/priv/static/assets/ 2>/dev/null || true
+    fi
+    if [ -f "apps/evaa_crm_web_gaepell/assets/js/offline-sync.js" ]; then
+      cp apps/evaa_crm_web_gaepell/assets/js/offline-sync.js apps/evaa_crm_web_gaepell/priv/static/assets/ 2>/dev/null || true
+    fi
+    mix phx.digest 2>/dev/null || true
+  else
+    echo "  ❌ Asset compilation failed"
+  fi
 else
-  echo "  ⚠️  Tailwind compilation failed"
-fi
-
-# Compile JavaScript with esbuild (minified for production)
-echo "  Compiling JavaScript..."
-if mix esbuild evaa_crm_web_gaepell --minify; then
-  echo "  ✅ JavaScript compiled"
-else
-  echo "  ⚠️  JavaScript compilation failed"
-fi
-
-# Copy additional JS files that aren't bundled
-echo "  Copying additional JS files..."
-if [ -f "apps/evaa_crm_web_gaepell/assets/js/pwa.js" ]; then
-  cp apps/evaa_crm_web_gaepell/assets/js/pwa.js apps/evaa_crm_web_gaepell/priv/static/assets/ 2>/dev/null || true
-fi
-if [ -f "apps/evaa_crm_web_gaepell/assets/js/offline-sync.js" ]; then
-  cp apps/evaa_crm_web_gaepell/assets/js/offline-sync.js apps/evaa_crm_web_gaepell/priv/static/assets/ 2>/dev/null || true
-fi
-
-# Generate digest manifest for cache busting
-echo "  Generating asset digest..."
-if mix phx.digest; then
-  echo "✅ Assets compiled and digested successfully"
-else
-  echo "⚠️  WARNING: Asset digest failed, but continuing..."
-  echo "   The app may work but cache busting might not work"
+  echo "✅ Assets found (compiled during build)"
 fi
 
 echo ""

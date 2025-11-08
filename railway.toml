@@ -1,5 +1,6 @@
 [build]
 builder = "nixpacks"
+buildCommand = "chmod +x scripts/build.sh && bash scripts/build.sh"
 
 [deploy]
 startCommand = "chmod +x scripts/start.sh && bash scripts/start.sh"
