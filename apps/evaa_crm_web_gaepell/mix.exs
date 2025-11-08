@@ -71,10 +71,10 @@ defmodule EvaaCrmWebGaepell.MixProject do
       setup: ["deps.get", "assets.setup", "assets.build"],
       test: ["ecto.create --quiet", "ecto.migrate --quiet", "test"],
       "assets.setup": ["tailwind.install --if-missing", "esbuild.install --if-missing"],
-      "assets.build": ["tailwind evaa_crm_web", "esbuild evaa_crm_web"],
+      "assets.build": ["tailwind evaa_crm_web_gaepell", "esbuild evaa_crm_web_gaepell"],
       "assets.deploy": [
-        "tailwind evaa_crm_web --minify",
-        "esbuild evaa_crm_web --minify",
+        "tailwind evaa_crm_web_gaepell --minify",
+        "esbuild evaa_crm_web_gaepell --minify",
         "phx.digest"
       ]
     ]
