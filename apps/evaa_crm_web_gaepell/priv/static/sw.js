@@ -10,17 +10,23 @@ self.addEventListener('activate', function(event) {
 });
 
 self.addEventListener('fetch', function(event) {
-  // Solo interceptar peticiones GET
+  // Solo interceptar peticiones GET del mismo origen
   if (event.request.method !== 'GET') {
     return;
   }
   
-  // Manejar peticiones correctamente sin only-if-cached
+  // Ignorar peticiones de extensiones del navegador, chrome-extension, etc.
+  const url = new URL(event.request.url);
+  if (url.protocol === 'chrome-extension:' || 
+      url.protocol === 'moz-extension:' || 
+      url.protocol === 'safari-extension:' ||
+      !url.href.startsWith(self.location.origin)) {
+    return; // Dejar que el navegador maneje estas peticiones normalmente
+  }
+  
+  // Manejar peticiones del mismo origen
   event.respondWith(
-    fetch(event.request, {
-      cache: 'default',
-      mode: 'same-origin'
-    }).catch(function(error) {
+    fetch(event.request).catch(function(error) {
       console.log('Fetch failed:', error);
       // Fallback: devolver respuesta vacía o error
       return new Response('Network error', {
