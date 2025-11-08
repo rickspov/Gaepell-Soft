@@ -15,6 +15,14 @@ mix compile
 
 echo ""
 echo "🎨 Building assets..."
+# Install Node.js dependencies first
+echo "  Installing Node.js dependencies..."
+cd apps/evaa_crm_web_gaepell/assets
+if [ -f "package.json" ]; then
+  npm install --production=false
+fi
+cd ../../..
+
 # Compile Tailwind CSS (minified for production)
 echo "  Compiling Tailwind CSS..."
 mix tailwind evaa_crm_web_gaepell --minify
