@@ -1,5 +1,5 @@
 [phases.setup]
-nixPkgs = ["nodejs-18_x", "erlang", "elixir"]
+nixPkgs = ["nodejs-18_x", "erlang", "elixir", "gcc", "gnumake"]
 
 [phases.install]
 cmds = [
