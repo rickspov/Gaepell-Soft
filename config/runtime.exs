@@ -21,13 +21,31 @@ if System.get_env("PHX_SERVER") do
     """
   end
 
+  # Configurar check_origin para permitir conexiones desde el dominio de Railway
+  # Railway puede usar diferentes dominios, así que permitimos cualquier origen que coincida con el host
+  check_origin = [
+    "https://#{host}",
+    "https://#{host}:443",
+    "//#{host}",
+    "//#{host}:443"
+  ]
+  
+  # También permitir dominios de Railway comunes
+  railway_origins = [
+    "https://*.railway.app",
+    "//*.railway.app",
+    "https://*.up.railway.app",
+    "//*.up.railway.app"
+  ]
+  
   config :evaa_crm_web_gaepell, EvaaCrmWebGaepell.Endpoint,
     url: [host: host, port: 443, scheme: "https"],
     http: [
       ip: {0, 0, 0, 0, 0, 0, 0, 0},
       port: port
     ],
-    secret_key_base: secret_key_base
+    secret_key_base: secret_key_base,
+    check_origin: check_origin ++ railway_origins
 
   # Railway puede usar DATABASE_URL o DATABASE_PUBLIC_URL
   # DATABASE_URL usa conexión privada (puerto 5432)
