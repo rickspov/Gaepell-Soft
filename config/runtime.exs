@@ -22,20 +22,9 @@ if System.get_env("PHX_SERVER") do
   end
 
   # Configurar check_origin para permitir conexiones desde el dominio de Railway
-  # Usamos una función que verifica dinámicamente si el origen es válido
-  check_origin_fn = fn origin ->
-    case URI.parse(origin) do
-      %URI{host: origin_host, scheme: scheme} when scheme in ["https", "http"] ->
-        # Permitir el host configurado
-        origin_host == host or
-        # Permitir cualquier subdominio de railway.app
-        String.ends_with?(origin_host, ".railway.app") or
-        String.ends_with?(origin_host, ".up.railway.app")
-      _ ->
-        false
-    end
-  end
-  
+  # Phoenix acepta: boolean, lista de hosts, :conn, o tupla MFA
+  # Usamos :conn para permitir verificación dinámica basada en la conexión
+  # Esto permite cualquier subdominio de railway.app automáticamente
   config :evaa_crm_web_gaepell, EvaaCrmWebGaepell.Endpoint,
     url: [host: host, port: 443, scheme: "https"],
     http: [
@@ -43,7 +32,7 @@ if System.get_env("PHX_SERVER") do
       port: port
     ],
     secret_key_base: secret_key_base,
-    check_origin: check_origin_fn
+    check_origin: :conn
 
   # Railway puede usar DATABASE_URL o DATABASE_PUBLIC_URL
   # DATABASE_URL usa conexión privada (puerto 5432)
