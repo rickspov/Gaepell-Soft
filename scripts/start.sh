@@ -41,18 +41,14 @@ else
 fi
 
 echo ""
-echo "🌱 Checking if seeds need to be run..."
-# Check if admin user exists, if not run seeds
-if mix run -e "case EvaaCrmGaepell.Repo.get_by(EvaaCrmGaepell.User, email: \"admin@eva.com\") do; nil -> System.halt(1); _ -> System.halt(0) end" 2>/dev/null; then
-  echo "✅ Users already exist, skipping seeds"
+echo "🌱 Running seeds (idempotent - safe to run multiple times)..."
+# Seeds are idempotent, so it's safe to run them every time
+# They check if users exist before creating them
+if mix run apps/evaa_crm_gaepell/priv/repo/seeds_gaepell.exs; then
+  echo "✅ Seeds completed successfully"
 else
-  echo "  No users found, running seeds..."
-  if mix run apps/evaa_crm_gaepell/priv/repo/seeds_gaepell.exs; then
-    echo "✅ Seeds completed successfully"
-  else
-    echo "⚠️  WARNING: Seeds failed, but continuing..."
-    echo "   You may need to create users manually"
-  fi
+  echo "⚠️  WARNING: Seeds failed, but continuing..."
+  echo "   You may need to create users manually"
 fi
 
 echo ""
