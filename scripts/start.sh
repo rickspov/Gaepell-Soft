@@ -41,6 +41,21 @@ else
 fi
 
 echo ""
+echo "🌱 Checking if seeds need to be run..."
+# Check if admin user exists, if not run seeds
+if mix run -e "case EvaaCrmGaepell.Repo.get_by(EvaaCrmGaepell.User, email: \"admin@eva.com\") do; nil -> System.halt(1); _ -> System.halt(0) end" 2>/dev/null; then
+  echo "✅ Users already exist, skipping seeds"
+else
+  echo "  No users found, running seeds..."
+  if mix run apps/evaa_crm_gaepell/priv/repo/seeds_gaepell.exs; then
+    echo "✅ Seeds completed successfully"
+  else
+    echo "⚠️  WARNING: Seeds failed, but continuing..."
+    echo "   You may need to create users manually"
+  fi
+fi
+
+echo ""
 echo "🎨 Verifying assets are compiled..."
 # Assets should be compiled during build, but verify they exist
 if [ ! -f "apps/evaa_crm_web_gaepell/priv/static/assets/app.css" ] || [ ! -f "apps/evaa_crm_web_gaepell/priv/static/assets/app.js" ]; then
