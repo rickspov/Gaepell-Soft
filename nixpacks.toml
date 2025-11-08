@@ -1,0 +1,22 @@
+[phases.setup]
+nixPkgs = ["nodejs-18_x"]
+
+[phases.install]
+cmds = [
+  "cd apps/evaa_crm_web_gaepell/assets && npm install --production=false && cd ../../.."
+]
+
+[phases.build]
+cmds = [
+  "mix deps.get --only prod",
+  "mix compile",
+  "mix tailwind evaa_crm_web_gaepell --minify",
+  "mix esbuild evaa_crm_web_gaepell --minify",
+  "cp apps/evaa_crm_web_gaepell/assets/js/pwa.js apps/evaa_crm_web_gaepell/priv/static/assets/ || true",
+  "cp apps/evaa_crm_web_gaepell/assets/js/offline-sync.js apps/evaa_crm_web_gaepell/priv/static/assets/ || true",
+  "mix phx.digest"
+]
+
+[start]
+cmd = "chmod +x scripts/start.sh && bash scripts/start.sh"
+
