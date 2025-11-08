@@ -29,8 +29,6 @@ admin_user = case Repo.get_by(User, email: "admin@eva.com") do
       password: "admin123",
       password_confirmation: "admin123",
       role: "admin",
-      first_name: "Administrador",
-      last_name: "Gaepell",
       business_id: gaepell.id
     })
     |> Repo.insert!()
@@ -46,8 +44,6 @@ manager_user = case Repo.get_by(User, email: "manager@gaepell.com") do
       password: "manager123",
       password_confirmation: "manager123",
       role: "manager",
-      first_name: "Gerente",
-      last_name: "Operaciones",
       business_id: gaepell.id
     })
     |> Repo.insert!()
