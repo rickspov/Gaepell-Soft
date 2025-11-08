@@ -12,13 +12,22 @@ defmodule EvaaCrmWebGaepell.SessionController do
 
   def create(conn, %{"email" => email, "password" => password}) do
     user = Repo.get_by(User, email: email)
-    if user && check_password(user, password) do
-      conn
-      |> put_session(:user_id, user.id)
-      |> configure_session(renew: true)
-      |> redirect(to: "/")
-    else
-      render(conn, "new.html", error: "Email o contraseña incorrectos", current_user: nil)
+    
+    cond do
+      is_nil(user) ->
+        render(conn, "new.html", error: "Email o contraseña incorrectos", current_user: nil)
+      
+      is_nil(user.password_hash) ->
+        render(conn, "new.html", error: "Usuario sin contraseña configurada. Contacta al administrador.", current_user: nil)
+      
+      check_password(user, password) ->
+        conn
+        |> put_session(:user_id, user.id)
+        |> configure_session(renew: true)
+        |> redirect(to: "/")
+      
+      true ->
+        render(conn, "new.html", error: "Email o contraseña incorrectos", current_user: nil)
     end
   end
 
@@ -29,6 +38,12 @@ defmodule EvaaCrmWebGaepell.SessionController do
   end
 
   defp check_password(user, password) do
-    Bcrypt.verify_pass(password, user.password_hash)
+    if user.password_hash do
+      Bcrypt.verify_pass(password, user.password_hash)
+    else
+      false
+    end
+  rescue
+    _ -> false
   end
 end 
