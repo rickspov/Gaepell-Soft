@@ -17,11 +17,23 @@ echo ""
 echo "🎨 Building assets..."
 # Install Node.js dependencies first
 echo "  Installing Node.js dependencies..."
-cd apps/evaa_crm_web_gaepell/assets
-if [ -f "package.json" ]; then
-  npm install --production=false
+# Check if npm is available, if not try to find it or skip
+if command -v npm &> /dev/null; then
+  cd apps/evaa_crm_web_gaepell/assets
+  if [ -f "package.json" ]; then
+    npm install --production=false
+  fi
+  cd ../../..
+elif [ -f "/usr/bin/npm" ]; then
+  cd apps/evaa_crm_web_gaepell/assets
+  if [ -f "package.json" ]; then
+    /usr/bin/npm install --production=false
+  fi
+  cd ../../..
+else
+  echo "  ⚠️  npm not found, skipping npm install"
+  echo "  Assets may fail to compile if dependencies are missing"
 fi
-cd ../../..
 
 # Compile Tailwind CSS (minified for production)
 echo "  Compiling Tailwind CSS..."
