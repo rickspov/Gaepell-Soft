@@ -41,6 +41,15 @@ else
 fi
 
 echo ""
+echo "🎨 Building and digesting assets..."
+if mix assets.deploy; then
+  echo "✅ Assets compiled successfully"
+else
+  echo "⚠️  WARNING: Assets compilation failed, but continuing..."
+  echo "   The app may work but styles might be missing"
+fi
+
+echo ""
 echo "🌐 Starting Phoenix server..."
 echo "=========================================="
 exec mix phx.server
