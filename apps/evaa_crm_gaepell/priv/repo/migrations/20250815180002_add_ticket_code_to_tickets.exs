@@ -18,12 +18,10 @@ defmodule EvaaCrmGaepell.Repo.Migrations.AddTicketCodeToTickets do
       END $$;
     """
 
-    # Crear índices solo si no existen
-    execute """
-      CREATE INDEX IF NOT EXISTS maintenance_tickets_ticket_code_index ON maintenance_tickets (ticket_code);
-      CREATE INDEX IF NOT EXISTS evaluations_ticket_code_index ON evaluations (ticket_code);
-      CREATE INDEX IF NOT EXISTS production_orders_ticket_code_index ON production_orders (ticket_code);
-    """
+    # Crear índices solo si no existen (cada uno en un execute separado)
+    execute "CREATE INDEX IF NOT EXISTS maintenance_tickets_ticket_code_index ON maintenance_tickets (ticket_code)"
+    execute "CREATE INDEX IF NOT EXISTS evaluations_ticket_code_index ON evaluations (ticket_code)"
+    execute "CREATE INDEX IF NOT EXISTS production_orders_ticket_code_index ON production_orders (ticket_code)"
   end
 end
 

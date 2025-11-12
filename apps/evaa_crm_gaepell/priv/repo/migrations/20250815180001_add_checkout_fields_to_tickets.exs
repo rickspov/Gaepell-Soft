@@ -86,11 +86,9 @@ defmodule EvaaCrmGaepell.Repo.Migrations.AddCheckoutFieldsToTickets do
       END $$;
     """
 
-    # Crear índices solo si no existen
-    execute """
-      CREATE INDEX IF NOT EXISTS maintenance_tickets_checkout_date_index ON maintenance_tickets (checkout_date);
-      CREATE INDEX IF NOT EXISTS evaluations_checkout_date_index ON evaluations (checkout_date);
-      CREATE INDEX IF NOT EXISTS production_orders_checkout_date_index ON production_orders (checkout_date);
-    """
+    # Crear índices solo si no existen (cada uno en un execute separado)
+    execute "CREATE INDEX IF NOT EXISTS maintenance_tickets_checkout_date_index ON maintenance_tickets (checkout_date)"
+    execute "CREATE INDEX IF NOT EXISTS evaluations_checkout_date_index ON evaluations (checkout_date)"
+    execute "CREATE INDEX IF NOT EXISTS production_orders_checkout_date_index ON production_orders (checkout_date)"
   end
 end
